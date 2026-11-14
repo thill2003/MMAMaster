@@ -1,0 +1,159 @@
+name: Daily feature agents
+
+# The agent pipeline (docs/AGENT_CICD_HANDOFF.md §6): one manager and five workers, each a stateless
+# `claude -p` call, with a Todoist project as the shared board. State lives only in Todoist and in
+# git/GitHub, so a run that dies is simply picked up by the next one.
+#
+#   setup      find the Todoist project and its sections by name
+#   manager    Dana: escalations, PR reviews, assignment — never touches code
+#   run-agent  John, Brock, Silva, Matt, Jose: one branch and one open PR each
+#
+# The logic is in .github/agents/*.sh so it can be run and tested outside Actions
+# (scripts/pipeline-sim). Jobs copy those scripts from the default branch before any agent branch is
+# checked out, so an agent's branch can never change the pipeline that runs it.
+#
+# Only the Product Architect edits this file. Agents cannot: the default token can't push changes
+# under .github/workflows/, and worker.sh rejects any commit that touches .github/.
+
+on:
+  schedule:
+    # Minute 23, not 0: top-of-hour runs are the ones GitHub drops or delays under load.
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  TODOIST_PROJECT_NAME: ${{ vars.TODOIST_PROJECT_NAME || 'MMA Master' }}
+  # Pinned. Bump deliberately: the `opus` alias resolves to the newest Opus this release knows.
+  CLAUDE_CLI_VERSION: "2.1.296"
+
+jobs:
+  setup:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      configured: ${{ steps.secrets.outputs.configured }}
+      project_id: ${{ steps.ids.outputs.project_id }}
+      sec_task_review: ${{ steps.ids.outputs.sec_task_review }}
+      sec_ready: ${{ steps.ids.outputs.sec_ready }}
+      sec_todo: ${{ steps.ids.outputs.sec_todo }}
+      sec_in_progress: ${{ steps.ids.outputs.sec_in_progress }}
+      sec_pr: ${{ steps.ids.outputs.sec_pr }}
+      sec_hold: ${{ steps.ids.outputs.sec_hold }}
+    steps:
+      # Until both secrets exist the pipeline stays dormant instead of failing every hour.
+      - name: Are the secrets set?
+        id: secrets
+        env:
+          TODOIST_API_TOKEN: ${{ secrets.TODOIST_API_TOKEN }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -n "$TODOIST_API_TOKEN" ] && [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Agent pipeline is dormant: add the TODOIST_API_TOKEN and CLAUDE_CODE_OAUTH_TOKEN secrets to switch it on."
+          fi
+      - uses: actions/checkout@v4
+        if: steps.secrets.outputs.configured == 'true'
+        with:
+          sparse-checkout: .github/agents
+      - name: Find the Todoist project and sections
+        id: ids
+        if: steps.secrets.outputs.configured == 'true'
+        env:
+          TODOIST_API_TOKEN: ${{ secrets.TODOIST_API_TOKEN }}
+        run: bash .github/agents/setup.sh
+
+  manager:
+    needs: setup
+    if: needs.setup.outputs.configured == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    concurrency:
+      group: daily-manager
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      # The pipeline scripts only — she never sees or touches the code.
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/agents
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Claude Code (pinned)
+        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CLI_VERSION}"
+      - name: Dana's sweeps
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          TODOIST_API_TOKEN: ${{ secrets.TODOIST_API_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          PROJECT_ID: ${{ needs.setup.outputs.project_id }}
+          SEC_TASK_REVIEW: ${{ needs.setup.outputs.sec_task_review }}
+          SEC_READY: ${{ needs.setup.outputs.sec_ready }}
+          SEC_TODO: ${{ needs.setup.outputs.sec_todo }}
+          SEC_IN_PROGRESS: ${{ needs.setup.outputs.sec_in_progress }}
+          SEC_PR: ${{ needs.setup.outputs.sec_pr }}
+          SEC_HOLD: ${{ needs.setup.outputs.sec_hold }}
+        run: bash .github/agents/manager.sh
+
+  run-agent:
+    # After the manager, so anything she just routed is picked up in the same cycle.
+    needs: [setup, manager]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { agent: John, delay: 0 }
+          - { agent: Brock, delay: 4 }
+          - { agent: Silva, delay: 8 }
+          - { agent: Matt, delay: 12 }
+          - { agent: Jose, delay: 16 }
+    concurrency:
+      group: daily-feature-agent-${{ matrix.agent }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    env:
+      AGENT: ${{ matrix.agent }}
+      TODOIST_API_TOKEN: ${{ secrets.TODOIST_API_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+      PROJECT_ID: ${{ needs.setup.outputs.project_id }}
+      SEC_TODO: ${{ needs.setup.outputs.sec_todo }}
+      SEC_IN_PROGRESS: ${{ needs.setup.outputs.sec_in_progress }}
+      SEC_PR: ${{ needs.setup.outputs.sec_pr }}
+    steps:
+      - name: Stagger the start
+        run: sleep "${{ matrix.delay }}"
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Pin the pipeline scripts from the default branch
+        run: cp -r .github/agents "$RUNNER_TEMP/agents"
+      - name: Anything in the queue?
+        id: queue
+        run: bash "$RUNNER_TEMP/agents/worker.sh" --peek
+      - uses: pnpm/action-setup@v4
+        if: steps.queue.outputs.has_work == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.queue.outputs.has_work == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install Claude Code (pinned)
+        if: steps.queue.outputs.has_work == 'true'
+        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CLI_VERSION}"
+      - name: Work the queue
+        if: steps.queue.outputs.has_work == 'true'
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: bash "$RUNNER_TEMP/agents/worker.sh"

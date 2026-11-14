@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+"""Stand-in for the GitHub CLI: PRs and issues live in a JSON file ($SIM_GH), diffs are canned."""
+import json
+import os
+import subprocess
+import sys
+
+path = os.environ["SIM_GH"]
+state = json.load(open(path)) if os.path.exists(path) else {"prs": [], "issues": []}
+args = sys.argv[1:]
+
+
+def opt(name, default=None):
+    return args[args.index(name) + 1] if name in args else default
+
+
+def save():
+    json.dump(state, open(path, "w"))
+
+
+def out(data):
+    jq = opt("--jq")
+    if jq:
+        r = subprocess.run(["jq", "-r", jq], input=json.dumps(data), capture_output=True, text=True)
+        sys.stdout.write(r.stdout)
+        sys.exit(r.returncode)
+    print(json.dumps(data))
+
+
+cmd = args[:2]
+if cmd == ["pr", "list"]:
+    prs = [p for p in state["prs"] if p["state"] == "open"]
+    if opt("--head"):
+        prs = [p for p in prs if p["headRefName"] == opt("--head")]
+    out(prs)
+elif cmd == ["pr", "create"]:
+    n = len(state["prs"]) + 1
+    state["prs"].append({"number": n, "state": "open", "headRefName": opt("--head"), "title": opt("--title"), "body": opt("--body")})
+    save()
+    print("https://github.com/sim/repo/pull/%d" % n)
+elif cmd == ["pr", "edit"]:
+    for p in state["prs"]:
+        if str(p["number"]) == args[2]:
+            p["body"] = opt("--body")
+    save()
+elif cmd == ["issue", "list"]:
+    out([i for i in state["issues"] if i["state"] == "open"])
+elif cmd == ["issue", "create"]:
+    state["issues"].append({"number": len(state["issues"]) + 1, "state": "open", "title": opt("--title"), "comments": [opt("--body")]})
+    save()
+elif cmd == ["issue", "comment"]:
+    for i in state["issues"]:
+        if str(i["number"]) == args[2]:
+            i["comments"].append(opt("--body"))
+    save()
+elif args[0] == "api" and "/commits/" in args[1]:
+    print("diff --git a/src/x.ts b/src/x.ts\n+export const x = 1;")
+else:
+    sys.stderr.write("gh stub: unsupported: %s\n" % args)
+    sys.exit(1)

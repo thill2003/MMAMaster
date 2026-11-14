@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Stand-in for pnpm in the pipeline tests: installs nothing, succeeds.
+exit 0

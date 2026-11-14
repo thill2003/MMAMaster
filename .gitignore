@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env.local
+.env.*.local
+*.log
+.DS_Store
+ios/App/Pods/
+ios/App/build/
+android/.gradle/
+android/build/
+android/app/build/
+coverage/
+.vite/

@@ -1,0 +1,53 @@
+{
+  "name": "mma-master",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx --max-warnings 0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "cap:sync": "cap sync && node scripts/set-orientation.mjs",
+    "cap:ios": "cap open ios",
+    "cap:android": "cap open android",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"*.{ts,cjs,json}\" \"scripts/**/*.mjs\"",
+    "test:pipeline": "python3 scripts/pipeline-sim/run.py"
+  },
+  "dependencies": {
+    "@capacitor/app": "^6.0.2",
+    "@capacitor/core": "^6.1.0",
+    "@capacitor/haptics": "^6.0.2",
+    "@capacitor/preferences": "^6.0.3",
+    "phaser": "^3.90.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^6.1.0",
+    "@capacitor/cli": "^6.1.0",
+    "@capacitor/ios": "^6.1.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^7.16.0",
+    "@typescript-eslint/parser": "^7.16.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "eslint": "^8.57.0",
+    "eslint-import-resolver-typescript": "^3.6.1",
+    "eslint-plugin-boundaries": "^4.2.2",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-react-hooks": "^4.6.2",
+    "prettier": "^3.10.1",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.4",
+    "vite-tsconfig-paths": "^4.3.2",
+    "vitest": "^2.0.4"
+  }
+}

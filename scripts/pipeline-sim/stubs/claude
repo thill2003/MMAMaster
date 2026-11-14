@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""Stand-in for the Claude Code CLI. Reads the prompt from `-p`, answers the way a scenario needs.
+
+Manager prompts start with "SWEEP: escalation|review|assignment"; the reply for each comes from the
+environment (SIM_ESCALATION, SIM_REVIEW, SIM_ASSIGN) so a test can also feed in bad answers.
+Worker prompts ("SWEEP: worker") act on the task title: BLOCKME, CRASH, NOCOMMIT, WORKFLOW, TWOCOMMITS,
+or by default write one file and commit it.
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+
+args = sys.argv[1:]
+prompt = args[args.index("-p") + 1]
+sweep = prompt.split("\n", 1)[0].replace("SWEEP: ", "").strip()
+with open(os.environ["SIM_LOG"], "a") as log:
+    log.write(json.dumps({"sweep": sweep, "args": [a for a in args if a != prompt]}) + "\n")
+
+
+def reply(text):
+    print(json.dumps({"result": text, "is_error": False, "modelUsage": {"claude-opus-sim": {}}}))
+    sys.exit(0)
+
+
+def git(*a):
+    subprocess.run(["git", *a], check=True, stdout=subprocess.DEVNULL)
+
+
+if sweep == "escalation":
+    reply(os.environ.get("SIM_ESCALATION", '{"decision": "block", "comment": "This needs a person to decide."}'))
+if sweep == "review":
+    reply(os.environ.get("SIM_REVIEW", '```json\n{"decision": "ok", "review": "Does what the task asks; tests added."}\n```'))
+if sweep == "assignment":
+    if "SIM_ASSIGN" in os.environ:
+        reply(os.environ["SIM_ASSIGN"])
+    ids = re.findall(r'"id":"([^"]+)"', prompt.split("Tasks to route:")[1].split("What each agent")[0])
+    reply("Here you go:\n" + json.dumps([{"id": i, "decision": "assign", "agent": "John", "reason": "Idle."} for i in ids]))
+if sweep == "worker":
+    title = re.search(r"^Task: (.*)$", prompt, re.M).group(1)
+    if "CRASH" in title:
+        sys.exit(1)
+    if "BLOCKME" in title:
+        reply("I looked at the code.\nBLOCKED: the task does not say which screen the button goes on.")
+    if "NOCOMMIT" in title:
+        reply("Nothing to do.")
+    slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
+    if "WORKFLOW" in title:
+        os.makedirs(".github/workflows", exist_ok=True)
+        with open(".github/workflows/evil.yml", "w") as f:
+            f.write("name: evil\n")
+    with open(slug + ".txt", "w") as f:
+        f.write("work for " + title + "\n")
+    git("add", "-A")
+    git("commit", "-q", "-m", "Do " + title)
+    if "TWOCOMMITS" in title:
+        with open(slug + "-2.txt", "w") as f:
+            f.write("more\n")
+        git("add", "-A")
+        git("commit", "-q", "-m", "Fix up " + title)
+    reply("Done.")
+sys.exit(2)

@@ -1,0 +1,89 @@
+name: Merge gate
+
+# Dual gate for main: every Todoist task listed in the PR body must be
+# complete, Claude's peer-review commit comment must exist on the head SHA,
+# and a human approval (PR review APPROVED at the head SHA, or a
+# "/peer-approved <sha>" comment from the repo owner) must exist. On the
+# Free plan this check is advisory; with branch protection it is required.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    branches: [main]
+  pull_request_review:
+    types: [submitted, dismissed]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+jobs:
+  merge-gate:
+    # issue_comment fires for issues too; only continue for PR comments.
+    if: github.event_name != 'issue_comment' || github.event.issue.pull_request
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TODOIST_API_TOKEN: ${{ secrets.TODOIST_API_TOKEN }}
+      PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+      OWNER_LOGIN: ${{ github.repository_owner }}
+    steps:
+      - name: Evaluate the gate
+        run: |
+          set -uo pipefail
+          FAIL=0
+          say() { echo "::notice::$*"; }
+          bad() { echo "::error::$*"; FAIL=1; }
+
+          PR=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" \
+                --json headRefOid,body,author,reviews,comments)
+          HEAD=$(echo "$PR" | jq -r .headRefOid)
+          BODY=$(echo "$PR" | jq -r .body)
+          AUTHOR=$(echo "$PR" | jq -r .author.login)
+          say "Head SHA: $HEAD (author: $AUTHOR)"
+
+          # --- Gate 1: every Todoist task in the PR body is complete ---
+          IDS=$(echo "$BODY" | grep -oE '\(todoist:[A-Za-z0-9]+\)' | sed -E 's/\(todoist:([A-Za-z0-9]+)\)/\1/' | sort -u)
+          if [ -z "$IDS" ]; then
+            bad "No (todoist:<id>) markers in the PR body; cannot verify task completion."
+          fi
+          for ID in $IDS; do
+            RESP=$(curl -sS -w '\n%{http_code}' -H "Authorization: Bearer $TODOIST_API_TOKEN" \
+                     "https://api.todoist.com/api/v1/tasks/$ID")
+            CODE=$(echo "$RESP" | tail -1); JSON=$(echo "$RESP" | sed '$d')
+            if [ "$CODE" != "200" ]; then
+              # MMA Master addition: Todoist documents this endpoint as returning active tasks only, so a
+              # completed task can answer 404. Look for it among recently completed tasks before
+              # deciding it is not complete.
+              SINCE=$(date -u -d '80 days ago' +%Y-%m-%dT%H:%M:%SZ); UNTIL=$(date -u -d '1 day' +%Y-%m-%dT%H:%M:%SZ)
+              FOUND=$(curl -sS -G -H "Authorization: Bearer $TODOIST_API_TOKEN" \
+                        --data-urlencode "since=$SINCE" --data-urlencode "until=$UNTIL" --data-urlencode "limit=200" \
+                        "https://api.todoist.com/api/v1/tasks/completed/by_completion_date" \
+                      | jq -r --arg id "$ID" '[(.items // .results // [])[] | select((.id | tostring) == $id)] | length' 2>/dev/null)
+              if [ "${FOUND:-0}" -ge 1 ]; then say "Todoist task $ID is complete (found among completed tasks)."
+              else bad "Todoist task $ID: HTTP $CODE and not among recently completed tasks (treated as not complete)."; fi
+              continue
+            fi
+            DONE=$(echo "$JSON" | jq -r '.checked // .is_completed // false')
+            if [ "$DONE" = "true" ]; then say "Todoist task $ID is complete."
+            else bad "Todoist task $ID is not complete."; fi
+          done
+
+          # --- Gate 2: Claude's peer-review comment on the head commit ---
+          CC=$(gh api "repos/$GITHUB_REPOSITORY/commits/$HEAD/comments" \
+               --jq '[.[] | select(.body | startswith("**Peer Review (Claude):** READY"))] | length')
+          if [ "${CC:-0}" -ge 1 ]; then say "Claude peer-review comment found on $HEAD."
+          else bad "No '**Peer Review (Claude):** READY...' commit comment on $HEAD."; fi
+
+          # --- Gate 3: human approval at the head SHA ---
+          APPROVED=$(echo "$PR" | jq -r --arg h "$HEAD" \
+            '[.reviews[] | select(.state == "APPROVED" and .commit.oid == $h and .author.login != "github-actions")] | length')
+          CMD=$(echo "$PR" | jq -r --arg h "$HEAD" --arg o "$OWNER_LOGIN" \
+            '[.comments[] | select(.author.login == $o and (.body | test("^/peer-approved " + $h)))] | length')
+          if [ "${APPROVED:-0}" -ge 1 ]; then say "Human APPROVED review at $HEAD."
+          elif [ "${CMD:-0}" -ge 1 ]; then say "Owner /peer-approved comment for $HEAD."
+          else bad "No human approval at $HEAD (APPROVED review, or '/peer-approved $HEAD' comment from $OWNER_LOGIN)."; fi
+
+          [ "$FAIL" -eq 0 ] && say "merge-gate: all three gates satisfied." || exit 1
