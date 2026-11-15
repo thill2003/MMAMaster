@@ -295,7 +295,7 @@ What the plan does not yet define, grouped by when it bites. Every open line her
 - **Offline v1** (MM-132, open question #3), **save model** (MM-130), **licensing log** (MM-007), **Git LFS** (MM-006), **release mechanics** (MM-220–MM-223), **testing beyond unit** (MM-210–MM-213), **crash reporting and analytics** (MM-224), **accessibility floor** (MM-109), **non-goals** (MM-227).
 
 ### Process
-- **Milestones** (MM-230), **budget** (MM-231), **roles** (MM-232), **risk register** (MM-233), ~~**backlog**~~ — written, `MMA_MASTER_BACKLOG.md`.
+- **Milestones** (MM-230), **budget** (MM-231), **roles** (MM-232), ~~**risk register**~~ — written, §16, ~~**backlog**~~ — written, `MMA_MASTER_BACKLOG.md`.
 
 ## 14. Open questions
 
@@ -319,3 +319,28 @@ What the plan does not yet define, grouped by when it bites. Every open line her
 8. Difficulty setting and progressive ramp; audio, polish, store builds.
 
 **References (GamesCasino):** `README.md` §Getting started, §Native builds; `docs/AGENT_CICD_HANDOFF.md`; `.github/workflows/ci.yml`; `package.json`.
+
+## 16. Risk register (MM-233, last reviewed 2026-11-15)
+
+What could sink or stall v1, most serious first. Likelihood (L) and impact (I) are High, Med or Low; the trigger is the sign that a risk is turning into a problem. Every mitigation is a story, an open question in §14, or both.
+
+**Keeping it current:** review at every milestone (M0–M5) and whenever an open question in §14 is answered. Re-rank, change L/I, add new rows as `R<n>` with the next number, and move a risk that can no longer happen to **Closed** with the date and why — never reuse or renumber an id. Update the date in the heading. A story that discovers a new risk adds the row in the same PR.
+
+| # | Risk | L | I | Trigger | Mitigation | Stories / questions |
+|---|---|---|---|---|---|---|
+| R1 | **Never run on a phone.** Thumb reach, the D-pad hub, safe areas and touch latency are untested; the controls could feel wrong on glass after the whole game is built around them. | High | High | First phone build: misread hub presses, thumbs covering fighters, taps that feel late (taps resolve on release) | Phone build before more content; device QA checklist; hub size and button layout are profile data, so fixes are content changes | MM-213, MM-214, MM-015 |
+| R2 | **Depth movement doesn't work on a D-pad.** Walking in depth is the plan's default, not a decision; if it feels fiddly, every level, AI flank and hit tolerance changes. | Med | High | Playtesters whiff on the wrong depth line, or fight the D-pad diagonals | Settle it on a real phone before more levels are tuned | MM-234, Q1 |
+| R3 | **60 fps missed on the floor device.** The floor device isn't named, and procedural drawing, a full pack on screen and Phaser on an A13-class phone have never been profiled. | Med | High | Frame drops in a pack fight; heat or battery drain on the floor device | Name the floor device; profile at M1 and M4; DPR cap 2 already in; atlas memory budget | MM-213, MM-214, MM-082, Q5 |
+| R4 | **The 3D-look art pipeline stalls.** No Blender script, golden sprite or atlases exist; free libraries lack elbows, teep, clinch and hold variants; Blender work has no owner. The game could ship on the procedural stand-ins. | High | High | M2 arrives with `assets/` still empty; the golden sprite isn't approved | Golden sprite before mass rendering; budget the missing clips early; name a Blender owner; stand-ins stay shippable as a fallback | MM-080, MM-081, MM-085, MM-231, MM-232, Q2 |
+| R5 | **No human has played it.** Difficulty, clock lengths and feel come from a bot that reads tells from the simulation and guards perfectly; real players may find leaders unfair and clocks tight or slack. | High | Med | First outside playtest: quitting at one leader, clocks never or always running out | TestFlight and a web URL for playtests at M1; tune from data in `content/`, not code | MM-221, MM-067, MM-150 |
+| R6 | **Boss keys can't be found.** v1 gives no on-screen hints, a KO restarts the whole level and lives are rationed, so a player stuck on one leader may never see the next town. | Med | High | Playtesters stall at one leader across several lives | Readable tells per leader; Fenton as the tutorial; Easy assists; hints in content if playtests demand them | MM-053, MM-056, MM-107, MM-152 |
+| R7 | **Name or IP conflict.** "MMA Master" isn't cleared; invented gym and leader names could match real gyms or people; inspiration from other games could read as copying. | Med | High | Store or USPTO search hit; a real gym or person with a matching name | Clear the name before branding spend; search each gym and leader name; follow §12 | MM-225, §12 |
+| R8 | **Store rejection or late release work.** The app id is a placeholder, native projects don't exist, and icons, privacy manifest, keystore and listings aren't started; Apple and Google SDK minimums move each year and Capacitor 6 may fall behind them. | Med | Med | First TestFlight upload fails review or SDK checks; a store targets a newer SDK than Capacitor 6 builds | Set the real app id before `cap add`; run release work at M4, not M5; check store SDK minimums at each milestone | MM-220, MM-221, MM-222, `RELEASE.md` |
+| R9 | **The agent pipeline fails on its first real run.** It was written from the handoff doc and tested only against a mock Todoist and stub CLIs. | Med | Med | The first scheduled sweep errors, or a Todoist field name or endpoint is wrong | Smoke test against an empty Ready To Work before loading stories; fixes to `.github/` come from a human branch | MM-003 |
+| R10 | **Scope outruns the team.** Ten levels, nine leader styles and a champion for about an hour of play, with art, audio and device work still unowned and milestones undated. | Med | Med | A milestone slips with no date to slip against | Date the milestones; assign roles; cut neighborhoods (two instead of three) before cutting polish | MM-230, MM-231, MM-232 |
+| R11 | **Monetization decided late.** Paid, ads or none changes store setup, the privacy disclosure and possibly UI; only a no-op billing port exists. | Med | Low | M4 arrives undecided | Decide before store listings; the billing port keeps a late choice out of `core/` | MM-226, MM-224, Q4 |
+| R12 | **Daily lives frustrate or are gamed.** Lives come from the device date, so changing the clock grants more; too few lives on a level restart makes players quit. | Med | Low | Playtesters run out on one leader; reviews mention lives | Numbers are content (`LIVES_RULES`); server time arrives with accounts in v1.1 | Q6, MM-133 |
+| R13 | **Progress lost.** Saves are local only in v1; an uninstall or device change wipes them, and a bad save migration could corrupt them. | Low | Med | A save-schema change ships; player reports of lost progress | Versioned save with migration tests; cloud save in v1.1 | MM-130, MM-133, Q3 |
+| R14 | **Audio stand-ins never replaced.** The synthesized sound has never been heard by a person and there's no music source. | Med | Low | M3 with no audio files in `assets/` | Listen on a phone at M1; budget music; log every asset in `LICENSES.md` | MM-120, MM-121, MM-231, MM-007 |
+
+**Closed:** none yet.
