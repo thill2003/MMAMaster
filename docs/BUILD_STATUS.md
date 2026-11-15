@@ -104,5 +104,5 @@ Stream counts are on Normal; Easy and Hard scale them.
 - **Native projects**: `ios/` and `android/` have not been generated.
 - Move Lab (MM-019), spawn-stream visualizer (MM-020), elbow cut status (MM-041), gym and dojo kits and
   segment sequencing (MM-161–163), Playwright smoke test in CI (MM-212), a colourblind pass and remappable
-  layout (rest of MM-109 — button size and left-handed mirror exist), Definition of Done template (MM-008).
+  layout (rest of MM-109 — button size and left-handed mirror exist).
 - Everything post-v1 (E12–E15), release (E17) and process (E18).

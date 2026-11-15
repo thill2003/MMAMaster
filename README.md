@@ -13,6 +13,7 @@ Mobile-first (iOS and Android through Capacitor), with a web build for fast iter
 - **What is built, what is placeholder, what is untested: [docs/BUILD_STATUS.md](docs/BUILD_STATUS.md)**
 - Agent pipeline and review rules: [docs/AGENT_CICD_HANDOFF.md](docs/AGENT_CICD_HANDOFF.md)
 - Conventions for anyone (or any agent) changing code: [CLAUDE.md](CLAUDE.md)
+- Definition of Done and the story template: [docs/DEFINITION_OF_DONE.md](docs/DEFINITION_OF_DONE.md)
 
 ## Getting started
 

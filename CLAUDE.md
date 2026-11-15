@@ -17,6 +17,7 @@ pnpm test:pipeline   # the agent pipeline's scripts against a mock Todoist (pyth
 ```
 
 A change is done when `pnpm lint && pnpm test && pnpm build` pass and the story's own "done when" is met.
+The full checklist and the story template are in `docs/DEFINITION_OF_DONE.md`.
 
 ## Where things go
 
