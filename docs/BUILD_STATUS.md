@@ -105,4 +105,6 @@ Stream counts are on Normal; Easy and Hard scale them.
 - Move Lab (MM-019), spawn-stream visualizer (MM-020), elbow cut status (MM-041), gym and dojo kits and
   segment sequencing (MM-161–163), Playwright smoke test in CI (MM-212), a colourblind pass and remappable
   layout (rest of MM-109 — button size and left-handed mirror exist).
-- Everything post-v1 (E12–E15), release (E17) and process (E18).
+- Everything post-v1 (E12–E15), release (E17) and process (E18) — except the version and build-number
+  scheme and the release checklist (MM-223), which are written in [RELEASE.md](RELEASE.md), and the risk
+  register (MM-233), which is §16 of the plan.

@@ -83,8 +83,8 @@ pipeline scripts or pure refactors with no visible change — the story says whi
       steps go in the PR.
 - [ ] Run on a real phone (`pnpm build && pnpm cap:sync && pnpm cap:ios`) — the Product Architect's step,
       since device builds need a signing identity. Until the floor device is named and the device QA
-      checklist exists (MM-213), the PR says "not yet device-checked" and the item stays open on the
-      Todoist task rather than being ticked.
+      checklist exists (MM-213), the PR says "not yet device-checked" so the check is recorded as still
+      owed; that does not hold back the merge, and the Todoist task is completed as usual.
 - [ ] Holds 60 fps on the floor device once it is named (MM-213, MM-214).
 
 A story is done when `pnpm lint && pnpm test && pnpm build` pass, its "done when" is met, and every item

@@ -14,6 +14,7 @@ Mobile-first (iOS and Android through Capacitor), with a web build for fast iter
 - Agent pipeline and review rules: [docs/AGENT_CICD_HANDOFF.md](docs/AGENT_CICD_HANDOFF.md)
 - Conventions for anyone (or any agent) changing code: [CLAUDE.md](CLAUDE.md)
 - Definition of Done and the story template: [docs/DEFINITION_OF_DONE.md](docs/DEFINITION_OF_DONE.md)
+- Version and build-number scheme, release checklist: [docs/RELEASE.md](docs/RELEASE.md)
 
 ## Getting started
 
