@@ -6,17 +6,26 @@ export interface FighterLook {
   gloves: number;
   hair: number;
   hairStyle: "short" | "bald" | "mohawk" | "bun" | "headband";
+  /** Padded boxing gloves (the default) or open-finger MMA gloves. */
+  gloveStyle?: "boxing" | "mma";
   /** Overall size. */
   scale: number;
   /** Limb and torso thickness. */
   bulk: number;
 }
 
+/** Every computer-controlled fighter wears these. */
+export const CPU_GLOVES = 0x1f5fd6;
+
+/** Town leaders wear gold. */
+export const LEADER_GLOVES = 0xd4af37;
+
 export const PLAYER_LOOK: FighterLook = {
   skin: 0xe6b58e,
   shorts: 0x1d3fbf,
   trim: 0xf2c14e,
-  gloves: 0xd62828,
+  gloves: 0x141414,
+  gloveStyle: "mma",
   hair: 0x2b1d14,
   hairStyle: "headband",
   scale: 1.06,
@@ -29,18 +38,30 @@ export const ARCHETYPE_LOOKS: Record<string, FighterLook> = {
     skin: 0xdcae88,
     shorts: 0x777777,
     trim: 0xffffff,
-    gloves: 0x222222,
+    gloves: CPU_GLOVES,
+    gloveStyle: "mma",
     hair: 0x3a2a1e,
     hairStyle: "short",
     scale: 1.04,
     bulk: 1.15,
   },
-  kicker: { skin: 0xc99872, shorts: 0x777777, trim: 0xffffff, gloves: 0x222222, hair: 0x15131a, hairStyle: "bun", scale: 1.08, bulk: 0.86 },
+  kicker: {
+    skin: 0xc99872,
+    shorts: 0x777777,
+    trim: 0xffffff,
+    gloves: CPU_GLOVES,
+    gloveStyle: "mma",
+    hair: 0x15131a,
+    hairStyle: "bun",
+    scale: 1.08,
+    bulk: 0.86,
+  },
   grappler: {
     skin: 0xe8bf9e,
     shorts: 0x777777,
     trim: 0xffffff,
-    gloves: 0x222222,
+    gloves: CPU_GLOVES,
+    gloveStyle: "mma",
     hair: 0x6b4a2e,
     hairStyle: "bald",
     scale: 1.1,
@@ -50,7 +71,8 @@ export const ARCHETYPE_LOOKS: Record<string, FighterLook> = {
     skin: 0x8a5a3a,
     shorts: 0x777777,
     trim: 0xffffff,
-    gloves: 0x222222,
+    gloves: CPU_GLOVES,
+    gloveStyle: "mma",
     hair: 0x111111,
     hairStyle: "mohawk",
     scale: 0.94,

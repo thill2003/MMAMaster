@@ -134,6 +134,58 @@ const limb = (g: Phaser.GameObjects.Graphics, a: Pt, b: Pt, w: number, color: nu
 
 const lerpPt = (a: Pt, b: Pt, t: number): Pt => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
 
+/** A glove at `hand`, its forearm coming from `elbow`. */
+const glove = (
+  g: Phaser.GameObjects.Graphics,
+  elbow: Pt,
+  hand: Pt,
+  r: number,
+  color: number,
+  skin: number,
+  style: FighterLook["gloveStyle"],
+  shine: boolean,
+): void => {
+  if (style !== "mma") {
+    g.fillStyle(OUTLINE, 1);
+    g.fillCircle(hand.x, hand.y, r + 1.8);
+    g.fillStyle(color, 1);
+    g.fillCircle(hand.x, hand.y, r);
+    if (shine) {
+      g.fillStyle(shade(color, 1.3), 0.9);
+      g.fillCircle(hand.x - 1.5, hand.y - 2, r * 0.36);
+    }
+    return;
+  }
+  // Open-finger MMA glove: a slim knuckle pad, bare fingers curled under it, a strap at the wrist.
+  const dx = hand.x - elbow.x;
+  const dy = hand.y - elbow.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len;
+  const uy = dy / len;
+  const at = (k: number): Pt => ({ x: hand.x + ux * k, y: hand.y + uy * k });
+  const pad = r * 0.78;
+  // fingers peek out past the pad
+  capsule(g, at(pad * 0.2), at(pad * 0.95), pad * 1.05 + 2.4, OUTLINE);
+  capsule(g, at(pad * 0.2), at(pad * 0.95), pad * 1.05, skin);
+  // wrist cuff
+  capsule(g, at(-pad * 1.25), at(-pad * 0.35), pad * 1.5 + 3, OUTLINE);
+  capsule(g, at(-pad * 1.25), at(-pad * 0.35), pad * 1.5, color);
+  // knuckle pad
+  g.fillStyle(OUTLINE, 1);
+  g.fillCircle(hand.x, hand.y, pad + 1.8);
+  g.fillStyle(color, 1);
+  g.fillCircle(hand.x, hand.y, pad);
+  // strap stitching and a soft highlight so black still reads as padded
+  const strap = toward(color, 0xffffff, 0.32);
+  const s0 = at(-pad * 0.8);
+  g.lineStyle(1.6, strap, 0.9);
+  g.lineBetween(s0.x - uy * pad * 0.75, s0.y + ux * pad * 0.75, s0.x + uy * pad * 0.75, s0.y - ux * pad * 0.75);
+  if (shine) {
+    g.fillStyle(toward(color, 0xffffff, 0.22), 0.9);
+    g.fillCircle(hand.x - 1.2, hand.y - 1.6, pad * 0.34);
+  }
+};
+
 /** Draw one fighter into `g` with its feet at the origin, facing right. */
 export const drawFighter = (g: Phaser.GameObjects.Graphics, pose: Pose, look: FighterLook, opts: DrawOptions): void => {
   const sk = solve(pose);
@@ -163,10 +215,7 @@ export const drawFighter = (g: Phaser.GameObjects.Graphics, pose: Pose, look: Fi
   capsule(g, sk.hip, lerpPt(sk.hip, sk.kneeF, 0.55), (DIM.thighW + 5) * bulk, shortsFar);
   limb(g, sk.shoulder, sk.elbowF, DIM.armW * bulk, skinFar);
   limb(g, sk.elbowF, sk.handF, DIM.foreArmW * bulk, skinFar);
-  g.fillStyle(OUTLINE, 1);
-  g.fillCircle(sk.handF.x, sk.handF.y, DIM.glove * bulk + 1.8);
-  g.fillStyle(glovesFar, 1);
-  g.fillCircle(sk.handF.x, sk.handF.y, DIM.glove * bulk);
+  glove(g, sk.elbowF, sk.handF, DIM.glove * bulk, glovesFar, skinFar, look.gloveStyle, false);
 
   // --- torso
   const torsoW = 21 * bulk;
@@ -239,10 +288,5 @@ export const drawFighter = (g: Phaser.GameObjects.Graphics, pose: Pose, look: Fi
     capsule(g, a0, a1, DIM.armW * bulk + 1, c(opts.armband));
   }
   limb(g, sk.elbowB, sk.handB, DIM.foreArmW * bulk, skin);
-  g.fillStyle(OUTLINE, 1);
-  g.fillCircle(sk.handB.x, sk.handB.y, DIM.glove * bulk + 1.8);
-  g.fillStyle(gloves, 1);
-  g.fillCircle(sk.handB.x, sk.handB.y, DIM.glove * bulk);
-  g.fillStyle(c(shade(look.gloves, 1.3)), 0.9);
-  g.fillCircle(sk.handB.x - 1.5, sk.handB.y - 2, DIM.glove * bulk * 0.36);
+  glove(g, sk.elbowB, sk.handB, DIM.glove * bulk, gloves, skin, look.gloveStyle, true);
 };
