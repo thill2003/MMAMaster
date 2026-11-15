@@ -41,7 +41,7 @@ yet — see "Not verified" before trusting the feel or the difficulty.
 | E04 Gauntlet and level runtime | Spawn by scroll distance, density by segment, holds, leader trigger; clock; Knocked Out; score; stars; energy drink; camera; lives and the daily grant; health bars | MM-060–062, 064–072 |
 | E05 Art | **Placeholder only** — see below | MM-089–093 as procedural stand-ins |
 | E06 UI and screens | Title, metro map, level card, results, pause with combo list, settings, HUD, Fenton hints, strings in one file, 44 px touch floor and reduced motion | MM-100–109 (109 in part) |
-| E07 Audio | WebAudio unlock, looping sequencer, mute in background; 29 synthesized SFX (per-limb impacts, heavy, knockdown, block, check, parry, clinch, break and dump, KO, clock and final-seconds warning, GO, combo, UI), checked by `content/audio.test.ts`; six synthesized tracks | MM-120–122 as stand-ins (121 complete as a procedural set) |
+| E07 Audio | WebAudio unlock, looping sequencer, mute in background; 29 synthesized SFX (per-limb impacts, heavy, knockdown, block, check, parry, clinch, break and dump, KO, clock and final-seconds warning, GO, combo, UI), checked by `content/audio.test.ts`; 14 synthesized tracks — title, map, one per level, the champion's gym, and a chiptune sarama for leader fights and a faster one for the champion, both speeding up each loop | MM-120–122 as stand-ins (121 and 122 complete as procedural sets) |
 | E08 Progression and saves | Versioned save with migration, Capacitor Preferences with web fallback, services stubbed | MM-130–132 |
 | E09 St. Louis content | Ten levels with gyms, leaders, looks, themes and a curve | MM-140–149 |
 | E10 Difficulty | Easy/Normal/Hard multipliers, per-level and per-metro ramp, Easy assists | MM-150–152 |

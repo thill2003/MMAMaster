@@ -1,6 +1,7 @@
 import type { BossDef } from "@/core/ai";
 import type { HoldDef, LevelDef, StreamSegment } from "@/core/gauntlet";
 
+import type { TrackId } from "../audio";
 import { type FighterLook, LEADER_GLOVES } from "../fighters/looks";
 
 export type TimeOfDay = "morning" | "noon" | "afternoon" | "sunset" | "dusk" | "night";
@@ -23,8 +24,10 @@ export interface TownDef extends LevelDef {
   /** One line on the level card. */
   blurb: string;
   theme: ThemeDef;
-  /** Track id in content/audio. */
-  music: string;
+  /** The level's own track, in content/audio. */
+  music: TrackId;
+  /** What plays once the leader steps in (MM-122). */
+  leaderMusic: TrackId;
   /** Node position on the metro map, in map units (see MAP_SIZE). */
   map: { x: number; y: number };
   leaderLook: FighterLook;
@@ -113,7 +116,8 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0x8a1c1c,
       gymTrim: 0xf2c14e,
     },
-    music: "street_a",
+    music: "fenton",
+    leaderMusic: "leader",
     map: { x: 300, y: 2240 },
     isChampion: false,
   },
@@ -169,7 +173,8 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0x1f4e8c,
       gymTrim: 0xffffff,
     },
-    music: "street_b",
+    music: "chesterfield",
+    leaderMusic: "leader",
     map: { x: 690, y: 2030 },
     isChampion: false,
   },
@@ -228,7 +233,8 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0x1e7a4a,
       gymTrim: 0xf5e663,
     },
-    music: "street_a",
+    music: "kirkwood",
+    leaderMusic: "leader",
     map: { x: 330, y: 1810 },
     isChampion: false,
   },
@@ -287,7 +293,8 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0x3a3a3a,
       gymTrim: 0xd97b29,
     },
-    music: "street_b",
+    music: "st_charles",
+    leaderMusic: "leader",
     map: { x: 720, y: 1590 },
     isChampion: false,
   },
@@ -346,7 +353,8 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0xf2c14e,
       gymTrim: 0x111111,
     },
-    music: "street_c",
+    music: "east_st_louis",
+    leaderMusic: "leader",
     map: { x: 800, y: 1350 },
     isChampion: false,
   },
@@ -405,7 +413,8 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0x2b2b3a,
       gymTrim: 0xc0c0d0,
     },
-    music: "street_c",
+    music: "downtown",
+    leaderMusic: "leader",
     map: { x: 520, y: 1130 },
     isChampion: false,
   },
@@ -464,7 +473,8 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0xb5179e,
       gymTrim: 0xf5e663,
     },
-    music: "street_a",
+    music: "soulard",
+    leaderMusic: "leader",
     map: { x: 250, y: 900 },
     isChampion: false,
   },
@@ -526,7 +536,8 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0x0f5132,
       gymTrim: 0xd62828,
     },
-    music: "street_b",
+    music: "the_hill",
+    leaderMusic: "leader",
     map: { x: 610, y: 690 },
     isChampion: false,
   },
@@ -588,7 +599,8 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0xe85d04,
       gymTrim: 0xffffff,
     },
-    music: "street_c",
+    music: "central_west_end",
+    leaderMusic: "leader",
     map: { x: 300, y: 470 },
     isChampion: false,
   },
@@ -661,7 +673,8 @@ export const ST_LOUIS: TownDef[] = [
       bulk: 1.25,
     },
     theme: { kit: "arena", timeOfDay: "night", signs: ["CHAMPION'S HALL"], arch: true, gymColor: 0x111111, gymTrim: 0xd4af37 },
-    music: "boss",
+    music: "champion_gym",
+    leaderMusic: "champion",
     map: { x: 500, y: 190 },
     isChampion: true,
   },

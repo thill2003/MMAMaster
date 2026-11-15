@@ -82,7 +82,7 @@ export class FightScene extends Phaser.Scene {
     this.fx = new Fx(this, this.bridge.view.renderScale);
     this.applyCamera();
 
-    audio.music(req.town.music as Parameters<typeof audio.music>[0]);
+    audio.music(req.town.music);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.cleanup());
   }
 
@@ -241,7 +241,7 @@ export class FightScene extends Phaser.Scene {
         if (sim.boss) this.fx.spark(sim.boss.x, depthToScreenY(sim.boss.z, FLOOR_TOP) - 80, "ko");
         break;
       case "phase":
-        if (e.phase === "leader") audio.music("boss");
+        if (e.phase === "leader") audio.music(this.bridge.request?.town.leaderMusic ?? null);
         else if (e.phase === "won") {
           audio.music(null);
           audio.sfx("win");
