@@ -57,6 +57,12 @@ describe("content integrity", () => {
     expect(ST_LOUIS[ST_LOUIS.length - 1].isChampion).toBe(true);
   });
 
+  it("every gym's interior is its own mat and wall pair (MM-161)", () => {
+    const pairs = ST_LOUIS.map((t) => `${t.theme.interior.mat}/${t.theme.interior.wall}`);
+    expect(new Set(pairs).size).toBe(ST_LOUIS.length);
+    for (const t of ST_LOUIS) expect(t.theme.interior.matColor, t.id).not.toBe(t.theme.interior.wallColor);
+  });
+
   it("the tap strings on Punch are five long and true combos (each hit lands before hit-stun ends)", () => {
     const chain = ["jab", "cross", "hook_l", "hook_r", "uppercut"];
     for (let i = 0; i < chain.length - 1; i++) {

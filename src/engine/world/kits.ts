@@ -8,6 +8,8 @@ import { Rng } from "@/shared/rng";
  * Environment kits, drawn procedurally into canvas textures (the v0 stand-in for painted layers, plan §8).
  * Street kit: sky → far skyline (slow parallax) → storefront row → sidewalk and street.
  * Arena kit: back wall and banners → crowd → cage → mat.
+ * Gym kit: back wall (brick, cinder, padded or mirror) with the gym's banner and bags → mat (canvas, puzzle
+ * or roll-out). Each gym picks its variants and colours in its theme's `interior`.
  * Signage is invented; nothing here is a real business or a trademark.
  */
 interface Palette {
@@ -426,6 +428,205 @@ const drawMat = (scene: Phaser.Scene, key: string, theme: ThemeDef): void => {
   refresh(scene, key);
 };
 
+// ---------------------------------------------------------------- gym (MM-161)
+
+const hex = (c: number): string => `#${c.toString(16).padStart(6, "0")}`;
+
+/** Back wall: ceiling and strip lights, the wall variant, the gym's banner, heavy bags, baseboard. */
+const drawGymWall = (scene: Phaser.Scene, key: string, theme: ThemeDef, gymName: string): void => {
+  const w = 1024;
+  const ceiling = 46;
+  const base = WALL_BASE - 14;
+  const { wall, wallColor } = theme.interior;
+  const ctx = makeCanvas(scene, key, w, WALL_BASE);
+  ctx.fillStyle = hex(wallColor);
+  ctx.fillRect(0, 0, w, WALL_BASE);
+
+  if (wall === "brick") {
+    ctx.fillStyle = "rgba(0,0,0,0.22)";
+    for (let y = ceiling, row = 0; y < base; y += 12, row++) {
+      ctx.fillRect(0, y, w, 2);
+      for (let x = row % 2 === 0 ? 0 : 16; x < w; x += 32) ctx.fillRect(x, y, 2, 12);
+    }
+    ctx.fillStyle = "rgba(255,255,255,0.06)";
+    for (let i = 0; i < 60; i++) ctx.fillRect((i * 97) % w, ceiling + ((i * 41) % (base - ceiling)), 14, 8);
+  } else if (wall === "cinder") {
+    ctx.fillStyle = "rgba(0,0,0,0.16)";
+    for (let y = ceiling, row = 0; y < base; y += 26, row++) {
+      ctx.fillRect(0, y, w, 3);
+      for (let x = row % 2 === 0 ? 0 : 26; x < w; x += 52) ctx.fillRect(x, y, 3, 26);
+    }
+    // painted stripe in the gym colours
+    ctx.fillStyle = hex(theme.gymColor);
+    ctx.fillRect(0, base - 120, w, 26);
+    ctx.fillStyle = hex(theme.gymTrim);
+    ctx.fillRect(0, base - 94, w, 6);
+  } else if (wall === "padded") {
+    const padTop = base - 170;
+    for (let x = 0; x < w; x += 64) {
+      ctx.fillStyle = hex(theme.gymColor);
+      ctx.fillRect(x + 2, padTop, 60, base - padTop);
+      ctx.fillStyle = "rgba(255,255,255,0.14)";
+      ctx.fillRect(x + 6, padTop + 4, 8, base - padTop - 8);
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.fillRect(x, padTop, 2, base - padTop);
+    }
+    ctx.fillStyle = hex(theme.gymTrim);
+    ctx.fillRect(0, padTop - 6, w, 6);
+  } else {
+    // mirror wall: framed panels with a glint, the room faintly reflected
+    const top = ceiling + 40;
+    for (let x = 0; x < w; x += 128) {
+      ctx.fillStyle = "#3a3f4c";
+      ctx.fillRect(x + 4, top, 120, base - top - 8);
+      const g = ctx.createLinearGradient(0, top, 0, base);
+      g.addColorStop(0, "#9fb0c4");
+      g.addColorStop(1, "#5a6578");
+      ctx.fillStyle = g;
+      ctx.fillRect(x + 8, top + 4, 112, base - top - 16);
+      ctx.fillStyle = "rgba(255,255,255,0.22)";
+      ctx.beginPath();
+      ctx.moveTo(x + 30, top + 4);
+      ctx.lineTo(x + 54, top + 4);
+      ctx.lineTo(x + 24, base - 12);
+      ctx.lineTo(x + 8, base - 12);
+      ctx.fill();
+      ctx.fillStyle = "rgba(0,0,0,0.12)";
+      ctx.fillRect(x + 8, base - 60, 112, 48);
+    }
+  }
+
+  // ceiling and strip lights
+  ctx.fillStyle = "#16161e";
+  ctx.fillRect(0, 0, w, ceiling);
+  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  ctx.fillRect(0, ceiling, w, 6);
+  for (let x = 64; x < w; x += 256) {
+    ctx.fillStyle = "#f4f6ec";
+    ctx.fillRect(x, ceiling - 10, 128, 6);
+    const glow = ctx.createLinearGradient(0, ceiling, 0, ceiling + 140);
+    glow.addColorStop(0, "rgba(244,246,236,0.22)");
+    glow.addColorStop(1, "rgba(244,246,236,0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.moveTo(x, ceiling - 4);
+    ctx.lineTo(x + 128, ceiling - 4);
+    ctx.lineTo(x + 180, ceiling + 140);
+    ctx.lineTo(x - 52, ceiling + 140);
+    ctx.fill();
+  }
+
+  // the gym's banner, once per tile
+  const bx = 360;
+  const by = ceiling + 22;
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.fillRect(bx + 4, by + 4, 304, 56);
+  ctx.fillStyle = hex(theme.gymColor);
+  ctx.fillRect(bx, by, 304, 56);
+  ctx.fillStyle = hex(theme.gymTrim);
+  ctx.fillRect(bx, by, 304, 4);
+  ctx.fillRect(bx, by + 52, 304, 4);
+  ctx.font = "bold 20px 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  let label = gymName.toUpperCase();
+  while (ctx.measureText(label).width > 284 && label.length > 4) label = label.slice(0, -1);
+  ctx.fillText(label, bx + 152, by + 29);
+
+  // heavy bags on chains
+  for (const x of [120, 880]) {
+    ctx.fillStyle = "#3a3a42";
+    ctx.fillRect(x - 1, ceiling, 2, 70);
+    ctx.fillStyle = "#24181a";
+    ctx.fillRect(x - 22, ceiling + 70, 44, 150);
+    ctx.beginPath();
+    ctx.ellipse(x, ceiling + 220, 22, 8, 0, 0, Math.PI);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.12)";
+    ctx.fillRect(x - 16, ceiling + 74, 6, 140);
+    ctx.fillStyle = hex(theme.gymTrim);
+    ctx.fillRect(x - 22, ceiling + 96, 44, 5);
+    ctx.fillRect(x - 22, ceiling + 190, 44, 5);
+  }
+
+  // baseboard
+  ctx.fillStyle = "#1c1c24";
+  ctx.fillRect(0, base, w, WALL_BASE - base);
+  ctx.fillStyle = "rgba(255,255,255,0.1)";
+  ctx.fillRect(0, base, w, 2);
+  refresh(scene, key);
+};
+
+/** Floor: the mat variant in the gym's mat colour, with a shadow where it meets the wall. */
+const drawGymMat = (scene: Phaser.Scene, key: string, theme: ThemeDef): void => {
+  const w = 512;
+  const gh = H - WALL_BASE;
+  const { mat, matColor } = theme.interior;
+  const ctx = makeCanvas(scene, key, w, gh);
+  ctx.fillStyle = hex(matColor);
+  ctx.fillRect(0, 0, w, gh);
+  const shade = ctx.createLinearGradient(0, 0, 0, gh);
+  shade.addColorStop(0, "rgba(0,0,0,0.25)");
+  shade.addColorStop(1, "rgba(255,255,255,0.06)");
+  ctx.fillStyle = shade;
+  ctx.fillRect(0, 0, w, gh);
+
+  if (mat === "canvas") {
+    ctx.strokeStyle = "rgba(255,255,255,0.05)";
+    ctx.lineWidth = 2;
+    for (let x = 0; x < w; x += 128) {
+      ctx.beginPath();
+      ctx.moveTo(x + 18, 0);
+      ctx.lineTo(x - 12, gh);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = hex(theme.gymTrim);
+    ctx.globalAlpha = 0.45;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(14, 18, w - 28, gh - 30);
+    ctx.globalAlpha = 1;
+  } else if (mat === "puzzle") {
+    // two-tone checker of tiles, leaning like the arena's seams; 512 / 64 is even, so it wraps cleanly
+    const size = 64;
+    const rowH = 40;
+    for (let r = 0; r * rowH < gh; r++) {
+      const y = r * rowH;
+      const lean = r * 10;
+      ctx.fillStyle = "rgba(0,0,0,0.18)";
+      for (let c = -1; c <= w / size + 1; c++) {
+        if ((c + r) % 2 === 0) continue;
+        const x = c * size - lean;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + size, y);
+        ctx.lineTo(x + size - 10, y + rowH);
+        ctx.lineTo(x - 10, y + rowH);
+        ctx.fill();
+      }
+      // interlocking teeth along the row seam
+      ctx.fillStyle = "rgba(0,0,0,0.25)";
+      ctx.fillRect(0, y, w, 1);
+      for (let x = 8; x < w; x += 16) ctx.fillRect(x, y - 2, 6, 4);
+    }
+  } else {
+    // roll-out: long strips running the length of the room, taped at the seams
+    for (let y = 0; y < gh; y += 44) {
+      ctx.fillStyle = "rgba(0,0,0,0.3)";
+      ctx.fillRect(0, y, w, 2);
+      ctx.fillStyle = "rgba(255,255,255,0.08)";
+      ctx.fillRect(0, y + 2, w, 1);
+    }
+    ctx.fillStyle = hex(theme.gymTrim);
+    ctx.globalAlpha = 0.5;
+    for (let y = 44; y < gh; y += 88) ctx.fillRect(0, y - 2, w, 5);
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  ctx.fillRect(0, 0, w, 8);
+  refresh(scene, key);
+};
+
 // ---------------------------------------------------------------- assembly
 
 export interface Backdrop {
@@ -433,8 +634,11 @@ export interface Backdrop {
   destroy(): void;
 }
 
-/** Build the level's backdrop. Layers are fixed to the camera and scrolled by tile position for parallax. */
-export const buildBackdrop = (scene: Phaser.Scene, theme: ThemeDef, seed: number, viewWidth: number): Backdrop => {
+/**
+ * Build the level's backdrop. Layers are fixed to the camera and scrolled by tile position for parallax.
+ * `gymName` goes on the gym kit's banner.
+ */
+export const buildBackdrop = (scene: Phaser.Scene, theme: ThemeDef, gymName: string, seed: number, viewWidth: number): Backdrop => {
   const pal = PALETTES[theme.timeOfDay];
   const rng = new Rng(seed);
   const objects: Phaser.GameObjects.GameObject[] = [];
@@ -467,6 +671,11 @@ export const buildBackdrop = (scene: Phaser.Scene, theme: ThemeDef, seed: number
     tile("bg-skyline", WALL_BASE - 260 - 40, 260, 0.12, -990);
     tile("bg-facade", 0, WALL_BASE, 1, -980);
     tile("bg-ground", WALL_BASE, H - WALL_BASE, 1, -970);
+  } else if (theme.kit === "gym") {
+    drawGymWall(scene, "bg-gym-wall", theme, gymName);
+    drawGymMat(scene, "bg-gym-mat", theme);
+    tile("bg-gym-wall", 0, WALL_BASE, 1, -980);
+    tile("bg-gym-mat", WALL_BASE, H - WALL_BASE, 1, -970);
   } else {
     drawArenaWall(scene, "bg-wall", theme);
     drawCrowd(scene, "bg-crowd", rng);

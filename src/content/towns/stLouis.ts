@@ -5,9 +5,22 @@ import { type FighterLook, LEADER_GLOVES } from "../fighters/looks";
 
 export type TimeOfDay = "morning" | "noon" | "afternoon" | "sunset" | "dusk" | "night";
 
+/** Gym kit floor (MM-161): one canvas sheet, interlocking puzzle tiles, or taped roll-out strips. */
+export type GymMat = "canvas" | "puzzle" | "rollout";
+/** Gym kit back wall (MM-161): exposed brick, painted cinder block, wall pads, or a mirror wall. */
+export type GymWall = "brick" | "cinder" | "padded" | "mirror";
+
+/** How the inside of this town's gym looks in the gym kit. Banners and pads take the gym colours. */
+export interface GymInteriorDef {
+  mat: GymMat;
+  wall: GymWall;
+  matColor: number;
+  wallColor: number;
+}
+
 /** How a level looks — all data, so every level can differ without new code (MM-160). */
 export interface ThemeDef {
-  kit: "street" | "arena";
+  kit: "street" | "arena" | "gym";
   timeOfDay: TimeOfDay;
   /** Invented storefront names for the street kit. No real businesses, no trademarks (plan §12). */
   signs: string[];
@@ -16,6 +29,8 @@ export interface ThemeDef {
   /** Gym colours worn by this gym's fighters: shorts and trim. */
   gymColor: number;
   gymTrim: number;
+  /** The gym kit's mat and wall for this gym, so no two gyms look alike inside. */
+  interior: GymInteriorDef;
 }
 
 export interface TownDef extends LevelDef {
@@ -112,6 +127,7 @@ export const ST_LOUIS: TownDef[] = [
       arch: false,
       gymColor: 0x8a1c1c,
       gymTrim: 0xf2c14e,
+      interior: { mat: "rollout", wall: "cinder", matColor: 0x2c3e66, wallColor: 0xbfb8a8 },
     },
     music: "street_a",
     map: { x: 300, y: 2240 },
@@ -168,6 +184,7 @@ export const ST_LOUIS: TownDef[] = [
       arch: false,
       gymColor: 0x1f4e8c,
       gymTrim: 0xffffff,
+      interior: { mat: "puzzle", wall: "mirror", matColor: 0x1f4e8c, wallColor: 0xd9dde2 },
     },
     music: "street_b",
     map: { x: 690, y: 2030 },
@@ -227,6 +244,7 @@ export const ST_LOUIS: TownDef[] = [
       arch: false,
       gymColor: 0x1e7a4a,
       gymTrim: 0xf5e663,
+      interior: { mat: "canvas", wall: "brick", matColor: 0x2f5d45, wallColor: 0x9a5a3e },
     },
     music: "street_a",
     map: { x: 330, y: 1810 },
@@ -286,6 +304,7 @@ export const ST_LOUIS: TownDef[] = [
       arch: false,
       gymColor: 0x3a3a3a,
       gymTrim: 0xd97b29,
+      interior: { mat: "puzzle", wall: "padded", matColor: 0x4a4a50, wallColor: 0x6e6a64 },
     },
     music: "street_b",
     map: { x: 720, y: 1590 },
@@ -345,6 +364,7 @@ export const ST_LOUIS: TownDef[] = [
       arch: true,
       gymColor: 0xf2c14e,
       gymTrim: 0x111111,
+      interior: { mat: "canvas", wall: "cinder", matColor: 0x7a2a2a, wallColor: 0xd8d0b8 },
     },
     music: "street_c",
     map: { x: 800, y: 1350 },
@@ -404,6 +424,7 @@ export const ST_LOUIS: TownDef[] = [
       arch: true,
       gymColor: 0x2b2b3a,
       gymTrim: 0xc0c0d0,
+      interior: { mat: "rollout", wall: "mirror", matColor: 0x23232e, wallColor: 0x8c93a3 },
     },
     music: "street_c",
     map: { x: 520, y: 1130 },
@@ -463,6 +484,7 @@ export const ST_LOUIS: TownDef[] = [
       arch: true,
       gymColor: 0xb5179e,
       gymTrim: 0xf5e663,
+      interior: { mat: "rollout", wall: "brick", matColor: 0x5a2b4f, wallColor: 0x7e4433 },
     },
     music: "street_a",
     map: { x: 250, y: 900 },
@@ -525,6 +547,7 @@ export const ST_LOUIS: TownDef[] = [
       arch: true,
       gymColor: 0x0f5132,
       gymTrim: 0xd62828,
+      interior: { mat: "canvas", wall: "padded", matColor: 0x24443a, wallColor: 0xcfc4a8 },
     },
     music: "street_b",
     map: { x: 610, y: 690 },
@@ -587,6 +610,7 @@ export const ST_LOUIS: TownDef[] = [
       arch: true,
       gymColor: 0xe85d04,
       gymTrim: 0xffffff,
+      interior: { mat: "puzzle", wall: "brick", matColor: 0x8a3a12, wallColor: 0xe6e0d4 },
     },
     music: "street_c",
     map: { x: 300, y: 470 },
@@ -660,7 +684,15 @@ export const ST_LOUIS: TownDef[] = [
       scale: 1.24,
       bulk: 1.25,
     },
-    theme: { kit: "arena", timeOfDay: "night", signs: ["CHAMPION'S HALL"], arch: true, gymColor: 0x111111, gymTrim: 0xd4af37 },
+    theme: {
+      kit: "arena",
+      timeOfDay: "night",
+      signs: ["CHAMPION'S HALL"],
+      arch: true,
+      gymColor: 0x111111,
+      gymTrim: 0xd4af37,
+      interior: { mat: "canvas", wall: "mirror", matColor: 0x1b1b24, wallColor: 0x2c2a36 },
+    },
     music: "boss",
     map: { x: 500, y: 190 },
     isChampion: true,
