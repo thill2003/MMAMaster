@@ -71,7 +71,7 @@ export class FightScene extends Phaser.Scene {
     this.lastHud = "";
     this.reported = false;
 
-    this.backdrop = buildBackdrop(this, req.town.theme, req.town.seed, viewWidth);
+    this.backdrop = buildBackdrop(this, req.town.theme, req.town.gym, req.town.seed, viewWidth);
     this.shadows = this.add.graphics().setDepth(-100);
     this.dropsG = this.add.graphics().setDepth(-50);
     this.debugG = this.add.graphics().setDepth(850000);

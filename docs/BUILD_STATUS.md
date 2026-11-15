@@ -45,7 +45,7 @@ yet — see "Not verified" before trusting the feel or the difficulty.
 | E08 Progression and saves | Versioned save with migration, Capacitor Preferences with web fallback, services stubbed | MM-130–132 |
 | E09 St. Louis content | Ten levels with gyms, leaders, looks, themes and a curve | MM-140–149 |
 | E10 Difficulty | Easy/Normal/Hard multipliers, per-level and per-metro ramp, Easy assists | MM-150–152 |
-| E11 Themes | Theme per level as data (time of day, signage, gym colours, street or arena kit) | MM-160 |
+| E11 Themes | Theme per level as data (time of day, signage, gym colours, street, arena, gym or dojo kit); the gym kit with four walls (brick, cinder, padded, mirror) and three mats (canvas, puzzle, roll-out), a distinct pair per gym in `theme.interior`; the dojo kit (shoji, rafters, hanging scrolls with abstract brushwork; wood floor with tatami), its wood, tatami and scroll count per gym in `theme.dojo`. Every level still uses the street kit until segment sequencing (MM-163) puts the gym or dojo after it | MM-160–162 |
 | E16 QA | Replay test, headless level runs | MM-210, 211 |
 | Agent pipeline | `daily-feature-agents.yml` (Dana plus John, Brock, Silva, Matt, Jose) with its logic in `.github/agents/`, `merge-gate.yml`, the two review skills, and an offline test suite | MM-003 in part |
 
@@ -102,7 +102,7 @@ Stream counts are on Normal; Easy and Hard scale them.
 - **A live run of the agent pipeline** (MM-003). The workflows and scripts are in the repo (see below) but
   the Todoist project, the secrets and the smoke test are still to do.
 - **Native projects**: `ios/` and `android/` have not been generated.
-- Move Lab (MM-019), spawn-stream visualizer (MM-020), elbow cut status (MM-041), gym and dojo kits and
-  segment sequencing (MM-161–163), Playwright smoke test in CI (MM-212), a colourblind pass and remappable
+- Move Lab (MM-019), spawn-stream visualizer (MM-020), elbow cut status (MM-041), segment
+  sequencing (MM-163), Playwright smoke test in CI (MM-212), a colourblind pass and remappable
   layout (rest of MM-109 — button size and left-handed mirror exist).
 - Everything post-v1 (E12–E15), release (E17) and process (E18).
