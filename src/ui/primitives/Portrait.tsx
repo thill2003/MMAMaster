@@ -38,8 +38,51 @@ export const Portrait = ({ look, accent }: { look: FighterLook; accent: number }
       <circle cx="50" cy="62" r="2.4" fill="#17121c" />
       <circle cx="70" cy="62" r="2.4" fill="#17121c" />
       <path d="M52 73 Q60 70 68 73" fill="none" stroke="#17121c" strokeWidth="2.4" strokeLinecap="round" />
-      <circle cx={60 - w - 4} cy="128" r="13" fill={hex(look.gloves)} stroke="#17121c" strokeWidth="3" />
-      <circle cx={60 + w + 4} cy="128" r="13" fill={hex(look.gloves)} stroke="#17121c" strokeWidth="3" />
+      <Glove cx={60 - w - 4} look={look} />
+      <Glove cx={60 + w + 4} look={look} />
     </svg>
+  );
+};
+
+/** `color` moved `t` of the way to white, per channel. */
+const lighten = (color: number, t: number): number => {
+  const ch = (shift: number): number => {
+    const v = (color >> shift) & 0xff;
+    return Math.round(v + (0xff - v) * t) << shift;
+  };
+  return ch(16) | ch(8) | ch(0);
+};
+
+/** A raised fist at the bottom of the bust, its forearm running down out of frame. */
+const Glove = ({ cx, look }: { cx: number; look: FighterLook }): ReactElement => {
+  const cy = 128;
+  const r = 13;
+  const color = hex(look.gloves);
+  if (look.gloveStyle !== "mma") {
+    return <circle cx={cx} cy={cy} r={r} fill={color} stroke="#17121c" strokeWidth="3" />;
+  }
+  // Open-finger MMA glove, as in the fight: a slim knuckle pad, bare fingers above it, a cuff at the wrist.
+  const pad = r * 0.78;
+  const bar = (y0: number, y1: number, width: number, stroke: string) => (
+    <line x1={cx} y1={y0} x2={cx} y2={y1} stroke={stroke} strokeWidth={width} strokeLinecap="round" />
+  );
+  return (
+    <g>
+      {bar(cy - pad * 0.2, cy - pad * 0.95, pad * 1.05 + 5, "#17121c")}
+      {bar(cy - pad * 0.2, cy - pad * 0.95, pad * 1.05, hex(look.skin))}
+      {bar(cy + pad * 0.35, cy + pad * 1.25, pad * 1.5 + 5, "#17121c")}
+      {bar(cy + pad * 0.35, cy + pad * 1.25, pad * 1.5, color)}
+      <circle cx={cx} cy={cy} r={pad} fill={color} stroke="#17121c" strokeWidth="3" />
+      <line
+        x1={cx - pad * 0.75}
+        y1={cy + pad * 0.8}
+        x2={cx + pad * 0.75}
+        y2={cy + pad * 0.8}
+        stroke={hex(lighten(look.gloves, 0.32))}
+        strokeWidth="1.6"
+        strokeOpacity="0.9"
+      />
+      <circle cx={cx - 1.6} cy={cy - 2.2} r={pad * 0.34} fill={hex(lighten(look.gloves, 0.22))} fillOpacity="0.9" />
+    </g>
   );
 };

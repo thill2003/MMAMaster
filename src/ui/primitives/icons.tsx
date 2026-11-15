@@ -3,14 +3,9 @@ import type { ReactElement } from "react";
 const stroke = { fill: "none", stroke: "currentColor", strokeWidth: 2.4, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
 export const StarIcon = ({ on, className }: { on: boolean; className?: string }): ReactElement => (
-  <svg viewBox="0 0 24 24" className={className}>
-    <path
-      d="M12 2.2l2.9 6.2 6.7.8-5 4.6 1.4 6.7L12 17.1 5.9 20.5l1.4-6.7-5-4.6 6.7-.8z"
-      fill={on ? "#f2c14e" : "rgba(255,255,255,0.1)"}
-      stroke={on ? "#8a6210" : "rgba(255,255,255,0.35)"}
-      strokeWidth="1.4"
-      strokeLinejoin="round"
-    />
+  // Colours and the earned/unearned shape (filled vs dashed outline) are in styles.css (MM-109a).
+  <svg viewBox="0 0 24 24" className={`star ${on ? "on" : "off"} ${className ?? ""}`}>
+    <path d="M12 2.2l2.9 6.2 6.7.8-5 4.6 1.4 6.7L12 17.1 5.9 20.5l1.4-6.7-5-4.6 6.7-.8z" strokeWidth="1.4" strokeLinejoin="round" />
   </svg>
 );
 

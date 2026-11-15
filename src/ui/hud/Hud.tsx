@@ -137,7 +137,7 @@ export const Hud = ({ hud, lives, isChampion, showHints, unit, onPause }: Props)
       {banner === "leader" && hud.boss && (
         <div className="banner long display">
           <div className="sub">{isChampion ? STRINGS.championIntro : STRINGS.leaderIntro}</div>
-          <div className="big" style={{ fontSize: "calc(var(--u) * 64)" }}>
+          <div className="big" style={{ fontSize: "calc(var(--u) * var(--fs-headline))" }}>
             {hud.boss.name}
           </div>
           <div className="sub">{hud.boss.title}</div>
