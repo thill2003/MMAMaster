@@ -198,7 +198,7 @@ export const KnockedOut = ({ result, lives, onRetry, onMap }: KnockedOutProps): 
           {STRINGS.toMap}
         </Button>
       </div>
-      <span className="eyebrow" style={{ color: "var(--muted)", fontSize: "calc(var(--u) * 12)", letterSpacing: "0.14em" }}>
+      <span className="eyebrow" style={{ color: "var(--muted)", fontSize: "calc(var(--u) * var(--fs-small))", letterSpacing: "0.14em" }}>
         {STRINGS.retry} · {STRINGS.costsLife.toLowerCase()}
       </span>
     </div>
@@ -221,7 +221,7 @@ export const OutOfLives = ({ perDay, onMap }: { perDay: number; onMap: () => voi
   return (
     <div className="screen veil">
       <div className="center-col">
-        <div className="ko-title display" style={{ fontSize: "calc(var(--u) * 64)" }}>
+        <div className="ko-title display" style={{ fontSize: "calc(var(--u) * var(--fs-headline))" }}>
           {STRINGS.outOfLives}
         </div>
         <p>{STRINGS.outOfLivesBody}</p>

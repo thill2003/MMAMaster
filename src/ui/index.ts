@@ -7,3 +7,4 @@ export { Stars } from "./primitives/Stars";
 export { FightScreen } from "./screens/FightScreen";
 export { MetroMap } from "./screens/MetroMap";
 export { KnockedOut, LevelCard, OutOfLives, Pause, Results, SettingsScreen, Title } from "./screens/Screens";
+export { applyType, typeVars } from "./primitives/type";

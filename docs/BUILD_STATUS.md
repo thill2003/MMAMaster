@@ -39,7 +39,7 @@ yet — see "Not verified" before trusting the feel or the difficulty.
 | E02 Combat core | State machine, hit resolution with depth tolerance, hit-stop, knockback; strings as data with tap/hold steps and limb-switch cancels; direction and dash variants; guard, chip, check, low-kick stagger; clinch with knees, elbow, dump and splash; enemy clinch and mash escape; tuning table; game feel | MM-030–040 |
 | E03 Enemies and AI | Four archetypes, attack tokens and flanking, four ranks, leader framework, nine boss styles each with a key, champion with three phases | MM-050–056 (design sheets are the `design` field per town) |
 | E04 Gauntlet and level runtime | Spawn by scroll distance, density by segment, holds, leader trigger; clock; Knocked Out; score; stars; energy drink; camera; lives and the daily grant; health bars | MM-060–062, 064–072 |
-| E05 Art | **Placeholder only** — see below | MM-089–093 as procedural stand-ins |
+| E05 Art | **Placeholder only** — see below | MM-089–093 as procedural stand-ins; MM-094 type scale and font roles (`content/display.ts`) on system font stacks |
 | E06 UI and screens | Title, metro map, level card, results, pause with combo list, settings, HUD, Fenton hints, strings in one file, 44 px touch floor and reduced motion | MM-100–109 (109 in part) |
 | E07 Audio | WebAudio unlock, looping sequencer, mute in background; 23 synthesized SFX; six synthesized tracks | MM-120–122 as stand-ins |
 | E08 Progression and saves | Versioned save with migration, Capacitor Preferences with web fallback, services stubbed | MM-130–132 |
@@ -98,7 +98,7 @@ Stream counts are on Normal; Easy and Hard scale them.
 ## Not built
 
 - **Real art and audio** (E05, E07): no models, sprite sheets, atlases, Blender script, packing script,
-  golden sprite, retro font or audio files. `assets/` is empty.
+  golden sprite, a bundled pixel font file (its name goes at the front of `FONTS.retro`) or audio files. `assets/` is empty.
 - **A live run of the agent pipeline** (MM-003). The workflows and scripts are in the repo (see below) but
   the Todoist project, the secrets and the smoke test are still to do.
 - **Native projects**: `ios/` and `android/` have not been generated.
