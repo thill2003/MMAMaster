@@ -1,3 +1,6 @@
+import type { ClinchBreakReason } from "@/core/combat";
+import type { Limb } from "@/core/input";
+
 /**
  * Audio manifest. v0 has no audio files: the engine synthesizes every sound and every track from this data
  * (sfxr- and chiptune-style), so the whole soundtrack is a few hundred bytes and carries no licence.
@@ -28,11 +31,17 @@ export type SfxId =
   | "check"
   | "parry"
   | "clinch"
+  | "clinch_break"
+  | "dump"
+  | "knockdown"
   | "ko"
   | "player_ko"
   | "pickup"
   | "heal"
   | "clock"
+  | "clock_final"
+  | "go"
+  | "combo"
   | "ui_tap"
   | "ui_back"
   | "unlock"
@@ -73,7 +82,23 @@ export const SFX: Record<SfxId, SfxLayer[]> = {
     { type: "tone", wave: "square", from: 620, to: 310, dur: 0.12, gain: 0.3 },
     { type: "noise", from: 2400, to: 1000, dur: 0.08, gain: 0.3, filter: "bandpass" },
   ],
-  clinch: [{ type: "tone", wave: "sawtooth", from: 120, to: 84, dur: 0.14, gain: 0.3 }],
+  clinch: [
+    { type: "tone", wave: "sawtooth", from: 120, to: 84, dur: 0.14, gain: 0.3 },
+    { type: "noise", from: 700, to: 300, dur: 0.1, gain: 0.25, filter: "lowpass" },
+  ],
+  clinch_break: [
+    { type: "noise", from: 1200, to: 2800, dur: 0.08, gain: 0.22, filter: "bandpass" },
+    { type: "tone", wave: "sawtooth", from: 90, to: 140, dur: 0.08, gain: 0.2 },
+  ],
+  // The throw itself; the landing is the dump's knockdown hit.
+  dump: [
+    { type: "noise", from: 600, to: 2400, dur: 0.16, gain: 0.24, filter: "bandpass" },
+    { type: "tone", wave: "sawtooth", from: 70, to: 150, dur: 0.12, gain: 0.18 },
+  ],
+  knockdown: [
+    { type: "noise", from: 450, to: 110, dur: 0.22, gain: 0.5, filter: "lowpass", delay: 0.05 },
+    { type: "tone", wave: "sine", from: 85, to: 32, dur: 0.24, gain: 0.7, delay: 0.05 },
+  ],
   ko: [
     { type: "noise", from: 600, to: 120, dur: 0.34, gain: 0.6, filter: "lowpass" },
     { type: "tone", wave: "sine", from: 140, to: 30, dur: 0.4, gain: 0.9 },
@@ -93,6 +118,19 @@ export const SFX: Record<SfxId, SfxLayer[]> = {
     { type: "tone", wave: "triangle", from: 784, to: 784, dur: 0.14, gain: 0.35, delay: 0.16 },
   ],
   clock: [{ type: "tone", wave: "square", from: 1000, to: 1000, dur: 0.07, gain: 0.22 }],
+  clock_final: [
+    { type: "tone", wave: "square", from: 1320, to: 1320, dur: 0.06, gain: 0.24 },
+    { type: "tone", wave: "square", from: 1320, to: 1320, dur: 0.06, gain: 0.24, delay: 0.1 },
+  ],
+  go: [
+    { type: "tone", wave: "square", from: 784, to: 784, dur: 0.08, gain: 0.22 },
+    { type: "tone", wave: "square", from: 1175, to: 1175, dur: 0.16, gain: 0.22, delay: 0.08 },
+  ],
+  combo: [
+    { type: "tone", wave: "triangle", from: 880, to: 880, dur: 0.06, gain: 0.28 },
+    { type: "tone", wave: "triangle", from: 1109, to: 1109, dur: 0.06, gain: 0.28, delay: 0.05 },
+    { type: "tone", wave: "triangle", from: 1319, to: 1760, dur: 0.14, gain: 0.28, delay: 0.1 },
+  ],
   ui_tap: [{ type: "tone", wave: "square", from: 520, to: 700, dur: 0.05, gain: 0.2 }],
   ui_back: [{ type: "tone", wave: "square", from: 500, to: 340, dur: 0.06, gain: 0.2 }],
   unlock: [
@@ -126,6 +164,23 @@ export const SFX: Record<SfxId, SfxLayer[]> = {
     { type: "tone", wave: "sawtooth", from: 60, to: 180, dur: 0.5, gain: 0.4 },
   ],
 };
+
+/** Which impact each limb lands with (MM-121). Heavy hits, knockdowns and KOs layer on top. */
+export const LIMB_SFX: Record<Limb, SfxId> = { punch: "hit_punch", elbow: "hit_elbow", kick: "hit_kick", knee: "hit_knee" };
+
+/** How a clinch ends. Breaks that come with a hit or a KO already have that sound. */
+export const CLINCH_BREAK_SFX: Record<ClinchBreakReason, SfxId | null> = {
+  elbow: null,
+  knees: null,
+  hit: null,
+  ko: null,
+  timeout: "clinch_break",
+  escape: "clinch_break",
+  dump: "dump",
+};
+
+/** The clock warns once at 30 s, then every second from 10; the last ones sound more urgent. */
+export const CLOCK_FINAL_SECONDS = 5;
 
 /**
  * A track is a looping step pattern. `lead` and `bass` are MIDI note numbers per 16th step (0 = rest);

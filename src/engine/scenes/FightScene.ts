@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 
+import { CLINCH_BREAK_SFX, CLOCK_FINAL_SECONDS, LIMB_SFX } from "@/content/audio";
 import { DISPLAY } from "@/content/display";
 import { buildFightConfig } from "@/content/fightConfig";
 import { ARCHETYPE_LOOKS, type FighterLook, PLAYER_LOOK, RANK_COLORS } from "@/content/fighters/looks";
@@ -27,8 +28,6 @@ interface View {
   armband: number | null;
   flash: number;
 }
-
-const LIMB_SFX = { punch: "hit_punch", elbow: "hit_elbow", kick: "hit_kick", knee: "hit_knee" } as const;
 
 /**
  * Draws one attempt at a town. All rules live in core/fight's FightSim; this scene feeds it one input
@@ -166,6 +165,7 @@ export class FightScene extends Phaser.Scene {
         const view = this.views.get(e.targetId);
         if (e.result === "hit") {
           audio.sfx(e.heavy ? "hit_heavy" : LIMB_SFX[e.limb]);
+          if (e.knockdown && !e.ko) audio.sfx("knockdown");
           this.fx.spark(e.x, y, e.ko ? "ko" : e.heavy ? "heavy" : "hit");
           if (view) view.flash = 1;
           if (e.heavy) this.shake(110, 0.006);
@@ -206,6 +206,11 @@ export class FightScene extends Phaser.Scene {
       case "clinch":
         audio.sfx("clinch");
         break;
+      case "clinchBreak": {
+        const id = CLINCH_BREAK_SFX[e.reason];
+        if (id) audio.sfx(id);
+        break;
+      }
       case "pickup":
         audio.sfx("pickup");
         break;
@@ -215,13 +220,15 @@ export class FightScene extends Phaser.Scene {
         break;
       case "comboEnd":
         if (e.bonus > 0) {
+          audio.sfx("combo");
           this.fx.text(sim.player.x, depthToScreenY(sim.player.z, FLOOR_TOP) - 150, `${e.limbs} LIMBS +${e.bonus}`, "#f2c14e", 20);
         }
         break;
       case "clockWarning":
-        audio.sfx("clock");
+        audio.sfx(e.seconds <= CLOCK_FINAL_SECONDS ? "clock_final" : "clock");
         break;
       case "holdCleared":
+        audio.sfx("go");
         this.fx.text(sim.cameraX + sim.viewWidth - 90, 250, "GO ▶", "#ffffff", 34);
         break;
       case "leaderIntro":
