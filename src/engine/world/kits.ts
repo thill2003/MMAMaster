@@ -10,6 +10,8 @@ import { Rng } from "@/shared/rng";
  * Arena kit: back wall and banners → crowd → cage → mat.
  * Gym kit: back wall (brick, cinder, padded or mirror) with the gym's banner and bags → mat (canvas, puzzle
  * or roll-out). Each gym picks its variants and colours in its theme's `interior`.
+ * Dojo kit: rafters, shoji and hanging scrolls (abstract brushwork, no text) → wood floor with tatami. Each
+ * gym's wood, tatami and scroll count are in its theme's `dojo`.
  * Signage is invented; nothing here is a real business or a trademark.
  */
 interface Palette {
@@ -627,6 +629,150 @@ const drawGymMat = (scene: Phaser.Scene, key: string, theme: ThemeDef): void => 
   refresh(scene, key);
 };
 
+// ---------------------------------------------------------------- dojo (MM-162)
+
+/** Back wall: rafters, plaster, a lintel beam, shoji panels between posts, hanging scrolls, baseboard. */
+const drawDojoWall = (scene: Phaser.Scene, key: string, theme: ThemeDef): void => {
+  const w = 1024;
+  const ceiling = 40;
+  const lintel = 112;
+  const base = WALL_BASE - 14;
+  const { woodColor, scrolls } = theme.dojo;
+  const wood = hex(woodColor);
+  const ctx = makeCanvas(scene, key, w, WALL_BASE);
+
+  // plaster above the lintel
+  ctx.fillStyle = "#e9e1cc";
+  ctx.fillRect(0, 0, w, WALL_BASE);
+  ctx.fillStyle = "rgba(0,0,0,0.05)";
+  for (let i = 0; i < 80; i++) ctx.fillRect((i * 89) % w, ceiling + ((i * 31) % (lintel - ceiling)), 3, 2);
+
+  // shoji: paper behind a lattice of thin bars
+  ctx.fillStyle = "#f3eedf";
+  ctx.fillRect(0, lintel, w, base - lintel);
+  const glow = ctx.createLinearGradient(0, lintel, 0, base);
+  glow.addColorStop(0, "rgba(255,244,214,0.35)");
+  glow.addColorStop(1, "rgba(0,0,0,0.08)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, lintel, w, base - lintel);
+  ctx.fillStyle = wood;
+  ctx.globalAlpha = 0.75;
+  for (let x = 0; x < w; x += 32) ctx.fillRect(x, lintel, 2, base - lintel);
+  for (let y = lintel + 36; y < base; y += 36) ctx.fillRect(0, y, w, 2);
+  ctx.globalAlpha = 1;
+
+  // posts, lintel and rafters in the dojo's wood
+  ctx.fillStyle = wood;
+  for (let x = 0; x < w; x += 256) ctx.fillRect(x, ceiling, 14, base - ceiling);
+  ctx.fillRect(0, lintel - 10, w, 12);
+  ctx.fillRect(0, 0, w, ceiling);
+  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  ctx.fillRect(0, ceiling, w, 5);
+  ctx.fillRect(0, lintel + 2, w, 3);
+  for (let x = 0; x < w; x += 256) ctx.fillRect(x + 11, ceiling, 3, base - ceiling);
+  for (let x = 32; x < w; x += 64) ctx.fillRect(x, 0, 10, ceiling - 4); // rafter ends
+  ctx.fillStyle = "rgba(255,255,255,0.12)";
+  ctx.fillRect(0, lintel - 10, w, 2);
+  for (let x = 0; x < w; x += 256) ctx.fillRect(x + 2, ceiling, 2, base - ceiling);
+
+  // hanging scrolls: cloth in the gym colours, paper, abstract brushwork and a seal — no text
+  const sw = 64;
+  const top = ceiling + 18;
+  const bottom = base - 40;
+  for (let k = 0; k < scrolls; k++) {
+    // one scroll per bay between posts, spread over the four bays
+    const x = 128 + 256 * Math.floor((k * 4) / scrolls) - sw / 2;
+    ctx.fillStyle = "#2a2018";
+    ctx.fillRect(x + sw / 2 - 1, ceiling, 2, top - ceiling); // cord
+    ctx.fillStyle = "rgba(0,0,0,0.25)";
+    ctx.fillRect(x + 4, top + 4, sw, bottom - top);
+    ctx.fillStyle = hex(theme.gymColor);
+    ctx.fillRect(x, top, sw, bottom - top);
+    ctx.fillStyle = "#f2ead2";
+    ctx.fillRect(x + 8, top + 22, sw - 16, bottom - top - 44);
+    ctx.fillStyle = hex(theme.gymTrim);
+    ctx.fillRect(x, top + 16, sw, 3);
+    ctx.fillRect(x, bottom - 19, sw, 3);
+    ctx.fillStyle = "#1a1a1a";
+    for (let s = 0; s < 4; s++) {
+      const by = top + 34 + s * 30;
+      if (by + 20 > bottom - 40) break;
+      const lean = ((k * 3 + s * 5) % 7) - 3;
+      ctx.beginPath();
+      ctx.moveTo(x + sw / 2 - 5 + lean, by);
+      ctx.lineTo(x + sw / 2 + 6 + lean, by + 3);
+      ctx.lineTo(x + sw / 2 + 2 - lean, by + 22);
+      ctx.lineTo(x + sw / 2 - 3 - lean, by + 20);
+      ctx.fill();
+      if ((k + s) % 2 === 0) ctx.fillRect(x + sw / 2 - 12, by + 9, 24, 3);
+    }
+    ctx.fillStyle = "#b3261e";
+    ctx.fillRect(x + sw - 20, bottom - 38, 8, 8); // seal
+    ctx.fillStyle = "#2a2018";
+    ctx.fillRect(x - 4, top - 4, sw + 8, 6); // top rod
+    ctx.fillRect(x - 6, bottom - 3, sw + 12, 7); // weighted bottom rod
+  }
+
+  // baseboard
+  ctx.fillStyle = wood;
+  ctx.fillRect(0, base, w, WALL_BASE - base);
+  ctx.fillStyle = "rgba(0,0,0,0.4)";
+  ctx.fillRect(0, base, w, WALL_BASE - base);
+  refresh(scene, key);
+};
+
+/** Floor: wood boards front and back, tatami laid between them in a running bond with bound edges. */
+const drawDojoFloor = (scene: Phaser.Scene, key: string, theme: ThemeDef): void => {
+  const w = 512;
+  const gh = H - WALL_BASE;
+  const { woodColor, tatamiColor, tatamiEdge } = theme.dojo;
+  const ctx = makeCanvas(scene, key, w, gh);
+  const back = 30;
+  const front = gh - 26;
+
+  // wood boards, the whole floor, grain running along the room
+  ctx.fillStyle = hex(woodColor);
+  ctx.fillRect(0, 0, w, gh);
+  for (let y = 0, row = 0; y < gh; y += 10, row++) {
+    ctx.fillStyle = "rgba(0,0,0,0.22)";
+    ctx.fillRect(0, y, w, 1);
+    for (let x = (row * 96) % 192; x < w; x += 192) ctx.fillRect(x, y, 1, 10);
+    ctx.fillStyle = row % 3 === 0 ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)";
+    ctx.fillRect(0, y + 1, w, 9);
+  }
+
+  // tatami: 2:1 mats, long side along the room, each row offset half a mat; 512 / 128 wraps cleanly
+  const matW = 128;
+  const rows = 2;
+  const rowH = (front - back) / rows;
+  for (let r = 0; r < rows; r++) {
+    const y = back + r * rowH;
+    for (let x = r % 2 === 0 ? -matW : -matW / 2; x < w; x += matW) {
+      ctx.fillStyle = hex(tatamiColor);
+      ctx.fillRect(x + 1, y + 1, matW - 2, rowH - 2);
+      ctx.fillStyle = "rgba(0,0,0,0.07)";
+      for (let gx = x + 3; gx < x + matW - 2; gx += 4) ctx.fillRect(gx, y + 1, 1, rowH - 2); // weave
+      ctx.fillStyle = hex(tatamiEdge);
+      ctx.fillRect(x + 1, y + 1, matW - 2, 5);
+      ctx.fillRect(x + 1, y + rowH - 6, matW - 2, 5);
+      ctx.fillStyle = "rgba(0,0,0,0.3)";
+      ctx.fillRect(x, y, 1, rowH);
+    }
+  }
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.fillRect(0, back - 1, w, 2);
+  ctx.fillRect(0, front - 1, w, 3);
+
+  const shade = ctx.createLinearGradient(0, 0, 0, gh);
+  shade.addColorStop(0, "rgba(0,0,0,0.22)");
+  shade.addColorStop(1, "rgba(255,255,255,0.05)");
+  ctx.fillStyle = shade;
+  ctx.fillRect(0, 0, w, gh);
+  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  ctx.fillRect(0, 0, w, 8);
+  refresh(scene, key);
+};
+
 // ---------------------------------------------------------------- assembly
 
 export interface Backdrop {
@@ -676,6 +822,11 @@ export const buildBackdrop = (scene: Phaser.Scene, theme: ThemeDef, gymName: str
     drawGymMat(scene, "bg-gym-mat", theme);
     tile("bg-gym-wall", 0, WALL_BASE, 1, -980);
     tile("bg-gym-mat", WALL_BASE, H - WALL_BASE, 1, -970);
+  } else if (theme.kit === "dojo") {
+    drawDojoWall(scene, "bg-dojo-wall", theme);
+    drawDojoFloor(scene, "bg-dojo-floor", theme);
+    tile("bg-dojo-wall", 0, WALL_BASE, 1, -980);
+    tile("bg-dojo-floor", WALL_BASE, H - WALL_BASE, 1, -970);
   } else {
     drawArenaWall(scene, "bg-wall", theme);
     drawCrowd(scene, "bg-crowd", rng);

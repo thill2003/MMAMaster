@@ -18,9 +18,22 @@ export interface GymInteriorDef {
   wallColor: number;
 }
 
+/**
+ * How this town's dojo looks in the dojo kit (MM-162): a wood floor with tatami laid on it, shoji walls and
+ * hanging scrolls. The scrolls' cloth takes the gym colours; their brushwork is abstract, never text.
+ */
+export interface DojoDef {
+  woodColor: number;
+  tatamiColor: number;
+  /** The cloth binding along the tatami's long edges. */
+  tatamiEdge: number;
+  /** Hanging scrolls per wall tile, 1–4. */
+  scrolls: number;
+}
+
 /** How a level looks — all data, so every level can differ without new code (MM-160). */
 export interface ThemeDef {
-  kit: "street" | "arena" | "gym";
+  kit: "street" | "arena" | "gym" | "dojo";
   timeOfDay: TimeOfDay;
   /** Invented storefront names for the street kit. No real businesses, no trademarks (plan §12). */
   signs: string[];
@@ -31,6 +44,8 @@ export interface ThemeDef {
   gymTrim: number;
   /** The gym kit's mat and wall for this gym, so no two gyms look alike inside. */
   interior: GymInteriorDef;
+  /** The dojo kit's wood, tatami and scrolls for this gym. */
+  dojo: DojoDef;
 }
 
 export interface TownDef extends LevelDef {
@@ -128,6 +143,7 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0x8a1c1c,
       gymTrim: 0xf2c14e,
       interior: { mat: "rollout", wall: "cinder", matColor: 0x2c3e66, wallColor: 0xbfb8a8 },
+      dojo: { woodColor: 0x8a5a34, tatamiColor: 0xb8b070, tatamiEdge: 0x1c1c1c, scrolls: 2 },
     },
     music: "street_a",
     map: { x: 300, y: 2240 },
@@ -185,6 +201,7 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0x1f4e8c,
       gymTrim: 0xffffff,
       interior: { mat: "puzzle", wall: "mirror", matColor: 0x1f4e8c, wallColor: 0xd9dde2 },
+      dojo: { woodColor: 0x6e4426, tatamiColor: 0xc2b878, tatamiEdge: 0x1f4e8c, scrolls: 3 },
     },
     music: "street_b",
     map: { x: 690, y: 2030 },
@@ -245,6 +262,7 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0x1e7a4a,
       gymTrim: 0xf5e663,
       interior: { mat: "canvas", wall: "brick", matColor: 0x2f5d45, wallColor: 0x9a5a3e },
+      dojo: { woodColor: 0xa0703f, tatamiColor: 0xa9a560, tatamiEdge: 0x1e3a2a, scrolls: 2 },
     },
     music: "street_a",
     map: { x: 330, y: 1810 },
@@ -305,6 +323,7 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0x3a3a3a,
       gymTrim: 0xd97b29,
       interior: { mat: "puzzle", wall: "padded", matColor: 0x4a4a50, wallColor: 0x6e6a64 },
+      dojo: { woodColor: 0x5a3a24, tatamiColor: 0xb5ad74, tatamiEdge: 0x2b2b2b, scrolls: 4 },
     },
     music: "street_b",
     map: { x: 720, y: 1590 },
@@ -365,6 +384,7 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0xf2c14e,
       gymTrim: 0x111111,
       interior: { mat: "canvas", wall: "cinder", matColor: 0x7a2a2a, wallColor: 0xd8d0b8 },
+      dojo: { woodColor: 0x9c6a3a, tatamiColor: 0xc8bd80, tatamiEdge: 0x7a2a2a, scrolls: 1 },
     },
     music: "street_c",
     map: { x: 800, y: 1350 },
@@ -425,6 +445,7 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0x2b2b3a,
       gymTrim: 0xc0c0d0,
       interior: { mat: "rollout", wall: "mirror", matColor: 0x23232e, wallColor: 0x8c93a3 },
+      dojo: { woodColor: 0x4a3020, tatamiColor: 0xa8a46a, tatamiEdge: 0x23232e, scrolls: 3 },
     },
     music: "street_c",
     map: { x: 520, y: 1130 },
@@ -485,6 +506,7 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0xb5179e,
       gymTrim: 0xf5e663,
       interior: { mat: "rollout", wall: "brick", matColor: 0x5a2b4f, wallColor: 0x7e4433 },
+      dojo: { woodColor: 0xb07a48, tatamiColor: 0xbcb27a, tatamiEdge: 0x5a2b4f, scrolls: 2 },
     },
     music: "street_a",
     map: { x: 250, y: 900 },
@@ -548,6 +570,7 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0x0f5132,
       gymTrim: 0xd62828,
       interior: { mat: "canvas", wall: "padded", matColor: 0x24443a, wallColor: 0xcfc4a8 },
+      dojo: { woodColor: 0x7a4e2c, tatamiColor: 0xb0aa6c, tatamiEdge: 0x0f5132, scrolls: 4 },
     },
     music: "street_b",
     map: { x: 610, y: 690 },
@@ -611,6 +634,7 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0xe85d04,
       gymTrim: 0xffffff,
       interior: { mat: "puzzle", wall: "brick", matColor: 0x8a3a12, wallColor: 0xe6e0d4 },
+      dojo: { woodColor: 0x8e5e30, tatamiColor: 0xc4b674, tatamiEdge: 0x8a3a12, scrolls: 3 },
     },
     music: "street_c",
     map: { x: 300, y: 470 },
@@ -692,6 +716,7 @@ export const ST_LOUIS: TownDef[] = [
       gymColor: 0x111111,
       gymTrim: 0xd4af37,
       interior: { mat: "canvas", wall: "mirror", matColor: 0x1b1b24, wallColor: 0x2c2a36 },
+      dojo: { woodColor: 0x3e2818, tatamiColor: 0x9e9a62, tatamiEdge: 0x111111, scrolls: 1 },
     },
     music: "boss",
     map: { x: 500, y: 190 },

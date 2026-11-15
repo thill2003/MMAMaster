@@ -63,6 +63,15 @@ describe("content integrity", () => {
     for (const t of ST_LOUIS) expect(t.theme.interior.matColor, t.id).not.toBe(t.theme.interior.wallColor);
   });
 
+  it("every dojo has one to four scrolls and tatami that stands out from its wood (MM-162)", () => {
+    for (const t of ST_LOUIS) {
+      const { scrolls, woodColor, tatamiColor, tatamiEdge } = t.theme.dojo;
+      expect(Number.isInteger(scrolls) && scrolls >= 1 && scrolls <= 4, t.id).toBe(true);
+      expect(tatamiColor, t.id).not.toBe(woodColor);
+      expect(tatamiEdge, t.id).not.toBe(tatamiColor);
+    }
+  });
+
   it("the tap strings on Punch are five long and true combos (each hit lands before hit-stun ends)", () => {
     const chain = ["jab", "cross", "hook_l", "hook_r", "uppercut"];
     for (let i = 0; i < chain.length - 1; i++) {
