@@ -1,4 +1,4 @@
-import { SFX, type SfxId, type SfxLayer, TRACKS, type TrackId } from "@/content/audio";
+import { SFX, type SfxId, type SfxLayer, TRACKS, type TrackId, trackBpm } from "@/content/audio";
 
 type Ctx = AudioContext;
 
@@ -127,10 +127,10 @@ class AudioEngine {
     const ctx = this.ctx;
     if (!ctx || !this.musicGain || !this.track || ctx.state !== "running") return;
     const tr = TRACKS[this.track];
-    const stepDur = 60 / tr.bpm / 4;
     if (this.nextTime < ctx.currentTime) this.nextTime = ctx.currentTime + 0.05;
     while (this.nextTime < ctx.currentTime + 0.25) {
       const i = this.step % tr.lead.length;
+      const stepDur = 60 / trackBpm(tr, Math.floor(this.step / tr.lead.length)) / 4;
       const t = this.nextTime;
       const lead = tr.lead[i];
       if (lead) {
@@ -146,6 +146,10 @@ class AudioEngine {
       if (d === "k") this.layer({ type: "tone", wave: "sine", from: 150, to: 45, dur: 0.11, gain: 0.5 }, t, this.musicGain);
       else if (d === "s") this.layer({ type: "noise", from: 2200, to: 900, dur: 0.09, gain: 0.26, filter: "bandpass" }, t, this.musicGain);
       else if (d === "h") this.layer({ type: "noise", from: 7000, to: 6000, dur: 0.03, gain: 0.09, filter: "highpass" }, t, this.musicGain);
+      else if (d === "c") {
+        this.layer({ type: "tone", wave: "sine", from: 2637, to: 2637, dur: 0.16, gain: 0.06 }, t, this.musicGain);
+        this.layer({ type: "noise", from: 8000, to: 7000, dur: 0.05, gain: 0.06, filter: "highpass" }, t, this.musicGain);
+      }
       this.nextTime += stepDur;
       this.step++;
     }
