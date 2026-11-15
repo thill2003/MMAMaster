@@ -453,6 +453,16 @@ button {
   width: calc(var(--u) * 64);
   height: calc(var(--u) * 64);
 }
+/* Earned stars are filled; unearned ones are a dashed outline, so the count reads by shape (MM-109a). */
+svg.star.on path {
+  fill: var(--hud-star-on);
+  stroke: var(--hud-star-on-edge);
+}
+svg.star.off path {
+  fill: none;
+  stroke: var(--hud-star-off);
+  stroke-dasharray: 2.4 1.6;
+}
 .star-pop {
   animation: starpop 0.45s both cubic-bezier(0.3, 1.7, 0.5, 1);
 }
@@ -630,38 +640,51 @@ input[type="range"] {
 }
 .bar {
   height: calc(var(--u) * 18);
-  background: rgba(0, 0, 0, 0.55);
-  border: calc(var(--u) * 2) solid #17121c;
-  outline: calc(var(--u) * 2) solid rgba(255, 255, 255, 0.75);
+  background: var(--hud-track);
+  border: calc(var(--u) * 2) solid var(--hud-ink);
+  outline: calc(var(--u) * 2) solid var(--hud-frame);
   border-radius: calc(var(--u) * 4);
   overflow: hidden;
   position: relative;
 }
+/* Colourblind pass (MM-109a): states differ in pattern as well as hue — low health is hazard-striped,
+   a leader's bar is notched into tenths. Colours are --hud-* from content/display. */
 .bar i {
   position: absolute;
   inset: 0 auto 0 0;
-  background: linear-gradient(#ffe37a, #f2a81e);
+  background: linear-gradient(var(--hud-health), var(--hud-health-deep));
   transition: width 0.12s linear;
 }
 .bar i.low {
-  background: linear-gradient(#ff8a7a, #d62828);
+  background:
+    repeating-linear-gradient(-45deg, var(--hud-health-low-stripe) 0 calc(var(--u) * 4), transparent calc(var(--u) * 4) calc(var(--u) * 9)),
+    linear-gradient(var(--hud-health-low), var(--hud-health-low-deep));
 }
 .bar i.lag {
-  background: #fff;
+  background: var(--hud-lag);
   opacity: 0.55;
   transition: width 0.5s 0.25s ease-out;
 }
 .bar.boss i {
-  background: linear-gradient(#ff7a6a, #c3261f);
+  background: linear-gradient(var(--hud-boss), var(--hud-boss-deep));
   right: 0;
   left: auto;
+}
+.bar.boss i.lag {
+  background: var(--hud-lag);
+}
+.bar.boss::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 calc(10% - var(--u) * 2), var(--hud-boss-notch) 0 10%);
 }
 .hud-label {
   display: flex;
   justify-content: space-between;
   font-size: calc(var(--u) * var(--fs-body));
   letter-spacing: 0.06em;
-  text-shadow: 0 calc(var(--u) * 2) 0 #17121c;
+  text-shadow: 0 calc(var(--u) * 2) 0 var(--hud-ink);
   margin-bottom: calc(var(--u) * 3);
 }
 .hud-score {
@@ -669,14 +692,15 @@ input[type="range"] {
   font-variant-numeric: tabular-nums;
   font-size: calc(var(--u) * var(--fs-body));
   margin-top: calc(var(--u) * 5);
-  text-shadow: 0 calc(var(--u) * 2) 0 #17121c;
+  text-shadow: 0 calc(var(--u) * 2) 0 var(--hud-ink);
   color: var(--gold);
 }
 .clock {
   text-align: center;
   min-width: calc(var(--u) * 96);
-  background: rgba(10, 10, 18, 0.72);
-  border: calc(var(--u) * 2) solid rgba(255, 255, 255, 0.7);
+  background: var(--hud-clock-plate);
+  color: var(--hud-clock-text);
+  border: calc(var(--u) * 2) solid var(--hud-frame);
   border-radius: calc(var(--u) * 8);
   padding: calc(var(--u) * 2) calc(var(--u) * 12) calc(var(--u) * 4);
 }
@@ -692,8 +716,17 @@ input[type="range"] {
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
+/* Under 30 s the plate flips light with dark digits: it reads by lightness, and still without the blink. */
+.clock.warn {
+  background: var(--hud-clock-warn-plate);
+  color: var(--hud-clock-warn-text);
+  border-color: var(--hud-clock-warn-frame);
+  outline: calc(var(--u) * 2) solid var(--hud-ink);
+}
+.clock.warn small {
+  color: var(--hud-clock-warn-text);
+}
 .clock.warn b {
-  color: #ff5a4d;
   animation: blink 0.5s steps(2) infinite;
 }
 @keyframes blink {
@@ -723,19 +756,25 @@ input[type="range"] {
   width: calc(var(--u) * 16);
   height: calc(var(--u) * 8);
   border-radius: calc(var(--u) * 2);
-  background: rgba(0, 0, 0, 0.5);
-  border: calc(var(--u) * 1.5) solid rgba(255, 255, 255, 0.7);
+  background: var(--hud-pip-off);
+  border: calc(var(--u) * 1.5) solid var(--hud-pip-frame);
 }
 .pip.on {
-  background: var(--gold);
+  background: var(--hud-pip-on);
 }
+/* The boss pip is a diamond, not a colour: it fills light and grows when the leader walks on. */
 .pip.bosspip {
-  width: calc(var(--u) * 14);
-  height: calc(var(--u) * 14);
-  border-radius: 50%;
+  width: calc(var(--u) * 11);
+  height: calc(var(--u) * 11);
+  margin-left: calc(var(--u) * 3);
+  border-radius: calc(var(--u) * 1.5);
+  transform: rotate(45deg);
 }
 .pip.bosspip.on {
-  background: var(--red);
+  background: var(--hud-boss-pip-on);
+  border-color: var(--hud-ink);
+  outline: calc(var(--u) * 1.5) solid var(--hud-pip-frame);
+  transform: rotate(45deg) scale(1.25);
 }
 .boss-plate {
   position: absolute;
@@ -770,17 +809,20 @@ input[type="range"] {
   left: calc(var(--u) * 18 + var(--safe-l));
   top: 26%;
   text-align: center;
-  color: #fff;
+  color: var(--hud-combo-text);
   text-shadow:
-    0 calc(var(--u) * 3) 0 #8a1c12,
-    0 0 calc(var(--u) * 14) rgba(0, 0, 0, 0.6);
+    0 calc(var(--u) * 3) 0 var(--hud-combo-shadow),
+    0 0 calc(var(--u) * 14) var(--hud-track);
   transform: skewX(-8deg);
 }
+/* An ink outline keeps the count readable on any backdrop, whatever the viewer's red and green. */
 .combo b {
   display: block;
   font-size: calc(var(--u) * var(--fs-headline));
   line-height: 0.9;
-  color: var(--gold);
+  color: var(--hud-combo);
+  -webkit-text-stroke: calc(var(--u) * 1.5) var(--hud-ink);
+  paint-order: stroke fill;
 }
 .combo span {
   font-size: calc(var(--u) * var(--fs-body));
@@ -1003,17 +1045,26 @@ input[type="range"] {
 .sbtn.item {
   width: calc(var(--btn) * 0.8);
   height: calc(var(--btn) * 0.8);
-  border-color: rgba(53, 196, 107, 0.9);
+  border-color: var(--hud-item);
 }
+/* An empty slot is dashed and its count badge goes dark — not only dimmer (MM-109a). */
 .sbtn.item.empty {
-  opacity: 0.3;
+  opacity: 0.45;
+  border-style: dashed;
+  border-color: var(--hud-item-empty-text);
+}
+.sbtn.item.empty .count {
+  background: var(--hud-item-empty);
+  color: var(--hud-item-empty-text);
+  border-style: dashed;
+  border-color: var(--hud-item-empty-text);
 }
 .sbtn .count {
   position: absolute;
   top: -8%;
   right: -8%;
-  background: var(--green);
-  color: #052611;
+  background: var(--hud-item);
+  color: var(--hud-item-text);
   font-family: var(--font-display);
   font-size: calc(var(--btn) * 0.24);
   min-width: calc(var(--btn) * 0.34);
@@ -1021,7 +1072,7 @@ input[type="range"] {
   border-radius: 999px;
   display: grid;
   place-items: center;
-  border: 2px solid #052611;
+  border: 2px solid var(--hud-item-text);
 }
 
 .rotate {

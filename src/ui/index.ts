@@ -8,3 +8,4 @@ export { FightScreen } from "./screens/FightScreen";
 export { MetroMap } from "./screens/MetroMap";
 export { KnockedOut, LevelCard, OutOfLives, Pause, Results, SettingsScreen, Title } from "./screens/Screens";
 export { applyType, typeVars } from "./primitives/type";
+export { applyHudColors, hudColorVars } from "./primitives/colors";
