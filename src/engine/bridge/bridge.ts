@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 
 import { DISPLAY } from "@/content/display";
-import type { TownDef } from "@/content/towns/stLouis";
+import type { TownDef } from "@/content/towns";
 import type { FightResult, HudState } from "@/core/fight";
 import type { Action } from "@/core/input";
 import type { Difficulty } from "@/core/progress";

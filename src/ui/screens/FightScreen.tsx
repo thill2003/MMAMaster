@@ -1,7 +1,7 @@
 import { type ReactElement, useCallback, useEffect, useRef, useState } from "react";
 
 import type { DeviceProfile } from "@/content/display";
-import type { TownDef } from "@/content/towns/stLouis";
+import type { TownDef } from "@/content/towns";
 import type { FightResult, HudState } from "@/core/fight";
 import type { Action } from "@/core/input";
 import type { Settings } from "@/core/progress";
@@ -10,6 +10,8 @@ import { onAppActiveChange } from "@/platform";
 
 import { Controls } from "../controls/Controls";
 import { Hud } from "../hud/Hud";
+import { useGamepadPause } from "../primitives/useGamepadMenu";
+import { useShowTouchControls } from "../primitives/useShowTouchControls";
 
 import { Pause } from "./Screens";
 
@@ -95,6 +97,15 @@ export const FightScreen = ({
   const setAction = useCallback((action: Action, down: boolean) => bridge.setAction(action, down), [bridge]);
   const live = hud !== null && hud.phase !== "won" && hud.phase !== "ko" && hud.phase !== "timeout";
 
+  const showTouch = useShowTouchControls();
+
+  // Start on a gamepad toggles pause, but only while the fight is still on.
+  const liveRef = useRef(live);
+  liveRef.current = live;
+  useGamepadPause(() => {
+    if (liveRef.current) setPaused((p) => !p);
+  });
+
   return (
     <>
       {hud && (
@@ -107,7 +118,7 @@ export const FightScreen = ({
           onPause={() => setPaused(true)}
         />
       )}
-      {live && !paused && (
+      {live && !paused && showTouch && (
         <Controls
           setAction={setAction}
           profile={profile}

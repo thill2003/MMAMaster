@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 
 import { DISPLAY } from "@/content/display";
-import type { ThemeDef, TimeOfDay } from "@/content/towns/stLouis";
+import type { ThemeDef, TimeOfDay } from "@/content/towns";
 import { Rng } from "@/shared/rng";
 
 /**

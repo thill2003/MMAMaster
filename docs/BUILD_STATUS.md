@@ -44,6 +44,7 @@ yet — see "Not verified" before trusting the feel or the difficulty.
 | E07 Audio | WebAudio unlock, looping sequencer, mute in background; 23 synthesized SFX; six synthesized tracks | MM-120–122 as stand-ins |
 | E08 Progression and saves | Versioned save with migration, Capacitor Preferences with web fallback, services stubbed | MM-130–132 |
 | E09 St. Louis content | Ten levels with gyms, leaders, looks, themes and a curve | MM-140–149 |
+| E15 New metros | Tour stop 2, Chicago: ten levels (Joliet → the Loop → Chicago) reusing the St. Louis level shapes at the metro-1 ramp; metros open on the previous belt; map arrows between tour stops; a Chicago map with the lake, river and elevated loop | MM-200 (in part), MM-201 |
 | E10 Difficulty | Easy/Normal/Hard multipliers, per-level and per-metro ramp, Easy assists | MM-150–152 |
 | E11 Themes | Theme per level as data (time of day, signage, gym colours, street or arena kit) | MM-160 |
 | E16 QA | Replay test, headless level runs | MM-210, 211 |
@@ -56,7 +57,7 @@ yet — see "Not verified" before trusting the feel or the difficulty.
 | Up/down: depth or jump/crouch (Q1) | Walk in depth, the plan's default | `core/combat`, `core/depth` |
 | How the 3D look is made (Q2) | **Not done.** Fighters, backdrops, the map and icons are drawn in code; fighters are jointed figures posed from angle tables, shaded to read as rounded. A stand-in until the Blender pipeline exists. | `engine/sprites`, `engine/world` |
 | Offline v1 (Q3) | Offline. `services/` is a stub and `@supabase/supabase-js` is not installed. | `src/services` |
-| Lives X and Y (Q6) | Start with 5, +5 each new day, cap 10 | `content/fighters/tuning.ts` `LIVES_RULES` |
+| Lives X and Y (Q6) | Start with 7, +5 each new day, cap 7 | `content/fighters/tuning.ts` `LIVES_RULES` |
 | Controls: DOM or Phaser (MM-015) | React DOM overlay on pointer events; the hub has hysteresis against the arms | `ui/controls` |
 | Energy drink source (MM-066) | Start with 1; every 5th grunt in a stream and the last fighter of each pack drops one; hold 3; heals 35 | `ITEM_RULES`, `dropEvery` per town |
 | The player (MM-083) | "The Challenger", placeholder look | `PLAYER_CHARACTER`, `PLAYER_LOOK` |

@@ -3,12 +3,25 @@ import { type CSSProperties, type ReactElement, useCallback, useEffect, useMemo,
 import { ORIENTATION } from "@/content/display";
 import { LIVES_RULES, STAR_RULES } from "@/content/fighters/tuning";
 import { STRINGS } from "@/content/strings";
-import { ST_LOUIS, TOWN_ORDER, townById } from "@/content/towns/stLouis";
+import { type MetroDef, METROS, metroById, metroOf, metroOrder, townById } from "@/content/towns";
 import type { FightResult } from "@/core/fight";
-import { isUnlocked, recordOutcome, type Settings, spendLife } from "@/core/progress";
+import { canAttempt, hasBelt, isUnlocked, recordOutcome, type SaveData, type Settings, spendLife } from "@/core/progress";
 import { audio, type GameBridge } from "@/engine";
 import { haptics } from "@/platform";
-import { FightScreen, KnockedOut, LevelCard, MetroMap, OutOfLives, PhaserGame, Results, RotateIcon, SettingsScreen, Title } from "@/ui";
+import {
+  BeltAward,
+  FightScreen,
+  KnockedOut,
+  LevelCard,
+  MetroMap,
+  OutOfLives,
+  PhaserGame,
+  Results,
+  RotateIcon,
+  SettingsScreen,
+  Title,
+  useGamepadMenu,
+} from "@/ui";
 
 import { useSave } from "./useSave";
 import { useStage } from "./useStage";
@@ -22,11 +35,18 @@ const demoTown = (): string | null => {
   return id && townById(id) ? id : null;
 };
 
+/** A metro is open when it is the first on the tour, or the belt of the one before it has been won (MM-200). */
+const metroOpen = (save: SaveData, metro: MetroDef): boolean => metro.index === 0 || hasBelt(save, metroOrder(METROS[metro.index - 1]));
+
+/** The map opens on the furthest metro you can fight in. */
+const furthestMetro = (save: SaveData): string => [...METROS].reverse().find((m) => metroOpen(save, m))?.id ?? METROS[0].id;
+
 type Screen =
   | { name: "title" }
-  | { name: "map"; card: string | null; justCleared: string | null }
+  | { name: "map"; metro: string; card: string | null; justCleared: string | null }
   | { name: "fight"; townId: string; attempt: number }
-  | { name: "results"; townId: string; result: FightResult; attempt: number }
+  | { name: "results"; townId: string; result: FightResult; attempt: number; beltWon: boolean }
+  | { name: "belt"; townId: string }
   | { name: "ko"; townId: string; result: FightResult; attempt: number }
   | { name: "outOfLives" };
 
@@ -38,6 +58,7 @@ export const App = (): ReactElement => {
   const [demo] = useState(demoTown);
   const [screen, setScreen] = useState<Screen>(demo ? { name: "fight", townId: demo, attempt: 0 } : { name: "title" });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  useGamepadMenu();
 
   // Keep the engine in step with the stage and the settings.
   useEffect(() => {
@@ -54,7 +75,7 @@ export const App = (): ReactElement => {
   useEffect(() => {
     if (screen.name === "title") audio.music("title");
     else if (screen.name === "map" || screen.name === "outOfLives") audio.music("map");
-    else if (screen.name === "results" || screen.name === "ko") audio.music(null);
+    else if (screen.name === "results" || screen.name === "ko" || screen.name === "belt") audio.music(null);
   }, [screen.name]);
 
   const changeSettings = useCallback(
@@ -62,28 +83,31 @@ export const App = (): ReactElement => {
     [update],
   );
 
-  /** Every attempt costs a life (plan §5). */
+  /** Starting a fight is free while you have lives; only losing one costs a life (plan §5). */
   const startAttempt = useCallback(
     (townId: string, attempt: number) => {
       if (!save) return;
-      const spent = spendLife(save);
-      if (!spent) {
+      if (!canAttempt(save)) {
         setScreen({ name: "outOfLives" });
         return;
       }
-      update(() => spent);
       setScreen({ name: "fight", townId, attempt });
     },
-    [save, update],
+    [save],
   );
 
   const onFinished = useCallback(
     (townId: string, attempt: number, result: FightResult) => {
       const won = result.outcome === "won";
+      const demoRun = demo !== null && attempt === 0;
+      // A metro's belt is awarded the first time its last level — the city champion — is beaten.
+      const metroTowns = metroOrder(metroOf(townById(townId)!));
+      const last = metroTowns[metroTowns.length - 1];
+      const beltWon = won && !demoRun && townId === last && !!save && !save.levels[last]?.cleared;
       // A bot run in demo mode never touches the save.
-      if (!(demo !== null && attempt === 0))
-        update((s) =>
-          recordOutcome(
+      if (!demoRun)
+        update((s) => {
+          const recorded = recordOutcome(
             s,
             townId,
             {
@@ -94,11 +118,13 @@ export const App = (): ReactElement => {
               bestCombo: result.bestCombo,
             },
             STAR_RULES,
-          ),
-        );
-      setScreen(won ? { name: "results", townId, result, attempt } : { name: "ko", townId, result, attempt });
+          );
+          // Only a loss — a KO or the clock running out — costs a life.
+          return won ? recorded : (spendLife(recorded) ?? recorded);
+        });
+      setScreen(won ? { name: "results", townId, result, attempt, beltWon } : { name: "ko", townId, result, attempt });
     },
-    [update, demo],
+    [update, demo, save],
   );
 
   const stageStyle = useMemo(
@@ -109,6 +135,14 @@ export const App = (): ReactElement => {
   // The fight stays mounted behind the results and knocked-out screens, frozen on its last frame.
   const fighting = screen.name === "fight" || screen.name === "results" || screen.name === "ko";
   const town = fighting ? townById(screen.townId) : undefined;
+  /** Back to the map of a level's metro. */
+  const mapOf = (townId: string): Extract<Screen, { name: "map" }> => ({
+    name: "map",
+    metro: townById(townId)?.metro ?? METROS[0].id,
+    card: null,
+    justCleared: null,
+  });
+  const mapMetro = screen.name === "map" ? (metroById(screen.metro) ?? METROS[0]) : METROS[0];
 
   return (
     <div className="shell" onContextMenu={(e) => e.preventDefault()}>
@@ -118,7 +152,7 @@ export const App = (): ReactElement => {
         {save && screen.name === "title" && (
           <Title
             toast={toast}
-            onPlay={() => setScreen({ name: "map", card: null, justCleared: null })}
+            onPlay={() => setScreen({ name: "map", metro: furthestMetro(save), card: null, justCleared: null })}
             onSettings={() => setSettingsOpen(true)}
           />
         )}
@@ -126,10 +160,14 @@ export const App = (): ReactElement => {
         {save && screen.name === "map" && (
           <>
             <MetroMap
-              towns={ST_LOUIS}
+              metro={mapMetro}
+              open={metroOpen(save, mapMetro)}
+              prev={METROS[mapMetro.index - 1] ?? null}
+              next={METROS[mapMetro.index + 1] ?? null}
+              onMetro={(id) => setScreen({ name: "map", metro: id, card: null, justCleared: null })}
               save={save}
               justCleared={screen.justCleared}
-              onPick={(id) => setScreen({ name: "map", card: id, justCleared: null })}
+              onPick={(id) => setScreen({ name: "map", metro: mapMetro.id, card: id, justCleared: null })}
               onBack={() => setScreen({ name: "title" })}
               onSettings={() => setSettingsOpen(true)}
             />
@@ -137,12 +175,12 @@ export const App = (): ReactElement => {
             {screen.card && townById(screen.card) && (
               <LevelCard
                 town={townById(screen.card)!}
-                index={TOWN_ORDER.indexOf(screen.card)}
+                index={metroOrder(mapMetro).indexOf(screen.card)}
                 record={save.levels[screen.card]}
-                unlocked={isUnlocked(save, TOWN_ORDER, screen.card)}
+                unlocked={metroOpen(save, mapMetro) && isUnlocked(save, metroOrder(mapMetro), screen.card)}
                 lives={save.lives}
                 onFight={() => startAttempt(screen.card!, 0)}
-                onClose={() => setScreen({ name: "map", card: null, justCleared: null })}
+                onClose={() => setScreen({ name: "map", metro: mapMetro.id, card: null, justCleared: null })}
               />
             )}
           </>
@@ -158,14 +196,34 @@ export const App = (): ReactElement => {
             profile={stage.profile}
             unit={stage.unit}
             onFinished={(r) => onFinished(town.id, screen.attempt, r)}
-            onQuit={() => setScreen({ name: "map", card: null, justCleared: null })}
+            onQuit={() => setScreen(mapOf(town.id))}
             onSettings={changeSettings}
             autoplay={demo !== null && screen.attempt === 0}
           />
         )}
 
         {save && town && screen.name === "results" && (
-          <Results town={town} result={screen.result} onContinue={() => setScreen({ name: "map", card: null, justCleared: town.id })} />
+          <Results
+            town={town}
+            result={screen.result}
+            onContinue={() => setScreen(screen.beltWon ? { name: "belt", townId: town.id } : { ...mapOf(town.id), justCleared: town.id })}
+          />
+        )}
+
+        {save && screen.name === "belt" && (
+          <BeltAward
+            metroName={STRINGS.metroNames[townById(screen.townId)?.metro ?? ""] ?? ""}
+            onContinue={() => {
+              // Winning a belt opens the next tour stop: go straight to its map.
+              const won = metroOf(townById(screen.townId)!);
+              const next = METROS[won.index + 1];
+              setScreen(
+                next
+                  ? { name: "map", metro: next.id, card: null, justCleared: null }
+                  : { ...mapOf(screen.townId), justCleared: screen.townId },
+              );
+            }}
+          />
         )}
 
         {save && town && screen.name === "ko" && (
@@ -173,12 +231,15 @@ export const App = (): ReactElement => {
             result={screen.result}
             lives={save.lives}
             onRetry={() => startAttempt(town.id, screen.attempt + 1)}
-            onMap={() => setScreen({ name: "map", card: null, justCleared: null })}
+            onMap={() => setScreen(mapOf(town.id))}
           />
         )}
 
         {save && screen.name === "outOfLives" && (
-          <OutOfLives perDay={LIVES_RULES.perDay} onMap={() => setScreen({ name: "map", card: null, justCleared: null })} />
+          <OutOfLives
+            perDay={LIVES_RULES.perDay}
+            onMap={() => setScreen({ name: "map", metro: furthestMetro(save), card: null, justCleared: null })}
+          />
         )}
 
         {save && settingsOpen && (
