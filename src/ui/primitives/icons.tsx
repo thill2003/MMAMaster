@@ -108,3 +108,72 @@ export const RotateIcon = (): ReactElement => (
     <path d="M22 37h4" />
   </svg>
 );
+
+/** The championship belt: a black leather strap, gold side plates and a big gold center plate with a star. */
+export const BeltArt = ({ className }: { className?: string }): ReactElement => (
+  <svg viewBox="0 0 320 140" className={className} role="img" aria-hidden>
+    <defs>
+      <linearGradient id="belt-gold" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#fff1b8" />
+        <stop offset="0.45" stopColor="#f2c14e" />
+        <stop offset="1" stopColor="#9a6c12" />
+      </linearGradient>
+      <linearGradient id="belt-strap" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#2a2a33" />
+        <stop offset="1" stopColor="#0c0c10" />
+      </linearGradient>
+    </defs>
+    {/* strap */}
+    <path d="M4 58 Q160 44 316 58 L316 98 Q160 84 4 98Z" fill="url(#belt-strap)" stroke="#000" strokeWidth="2" />
+    <path d="M10 64 Q160 51 310 64 M10 92 Q160 78 310 92" fill="none" stroke="#d62828" strokeWidth="2" strokeDasharray="5 5" />
+    {/* side plates */}
+    {[52, 268].map((x) => (
+      <g key={x} transform={`translate(${x} 77)`}>
+        <rect x="-24" y="-20" width="48" height="40" rx="8" fill="url(#belt-gold)" stroke="#6b4a08" strokeWidth="2.5" />
+        <circle r="9" fill="#d62828" stroke="#6b4a08" strokeWidth="2" />
+      </g>
+    ))}
+    {/* center plate */}
+    <g transform="translate(160 72)">
+      <path
+        d="M0 -64 L52 -46 L66 0 L52 46 L0 64 L-52 46 L-66 0 L-52 -46Z"
+        fill="url(#belt-gold)"
+        stroke="#6b4a08"
+        strokeWidth="3"
+        strokeLinejoin="round"
+      />
+      <path d="M0 -50 L40 -36 L51 0 L40 36 L0 50 L-40 36 L-51 0 L-40 -36Z" fill="none" stroke="#9a6c12" strokeWidth="2" />
+      <circle r="30" fill="#1b1a38" stroke="#6b4a08" strokeWidth="2.5" />
+      <path
+        d="M0 -21l6.2 13.2 14.4 1.6-10.7 9.9 3 14.2L0 10.3l-12.9 7.4 3-14.2L-20.6-6.2l14.4-1.6z"
+        fill="url(#belt-gold)"
+        stroke="#6b4a08"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </g>
+  </svg>
+);
+
+/** A small belt glyph for stat rows. */
+export const BeltIcon = ({ on, className }: { on: boolean; className?: string }): ReactElement => (
+  <svg viewBox="0 0 24 24" className={className}>
+    <rect
+      x="1"
+      y="9"
+      width="22"
+      height="6"
+      rx="2"
+      fill={on ? "#1b1a20" : "rgba(255,255,255,0.1)"}
+      stroke={on ? "#000" : "rgba(255,255,255,0.35)"}
+      strokeWidth="1"
+    />
+    <path
+      d="M12 5.5L16.5 7.5 17.5 12 16.5 16.5 12 18.5 7.5 16.5 6.5 12 7.5 7.5Z"
+      fill={on ? "#f2c14e" : "rgba(255,255,255,0.1)"}
+      stroke={on ? "#8a6210" : "rgba(255,255,255,0.35)"}
+      strokeWidth="1.2"
+      strokeLinejoin="round"
+    />
+  </svg>
+);

@@ -159,7 +159,7 @@ export const rampFor = (levelIndex: number, metroIndex = 0): { enemyHp: number; 
 export const ITEM_RULES: ItemRules = { heal: 35, max: 3, start: 1 };
 
 /** Lives (open question 6): placeholders for X per day and the cap Y. */
-export const LIVES_RULES: LivesRules = { startWith: 5, perDay: 5, cap: 10 };
+export const LIVES_RULES: LivesRules = { startWith: 7, perDay: 5, cap: 7 };
 
 export const STAR_RULES: StarRules = { healthFraction: 0.5, clockFraction: 0.25 };
 
