@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  canAttempt,
   computeStars,
   currentLevel,
   dayKey,
   finishBonuses,
   grantDaily,
+  hasBelt,
   hitPoints,
   isUnlocked,
   type LivesRules,
@@ -72,14 +74,34 @@ describe("unlocks", () => {
     expect(currentLevel(save, order)).toBe("b");
     expect(isUnlocked(save, order, "nope")).toBe(false);
   });
+
+  it("the belt is won by clearing the last level, and only that", () => {
+    let save = newSave(lives, "2026-11-14");
+    for (const id of order.slice(0, -1)) save = recordOutcome(save, id, win, stars);
+    expect(hasBelt(save, order)).toBe(false);
+    save = recordOutcome(save, order[order.length - 1], win, stars);
+    expect(hasBelt(save, order)).toBe(true);
+    expect(hasBelt(save, [])).toBe(false);
+  });
 });
 
 describe("lives", () => {
-  it("every attempt costs one, and none are left at zero", () => {
+  it("each loss costs one, and none are left at zero", () => {
     let save = newSave(lives, "2026-11-14");
+    save.settings = { ...save.settings, unlimitedLives: false };
     for (let i = 0; i < 5; i++) save = spendLife(save)!;
     expect(save.lives).toBe(0);
     expect(spendLife(save)).toBeNull();
+    expect(canAttempt(save)).toBe(false);
+    expect(canAttempt({ ...save, lives: 1 })).toBe(true);
+  });
+
+  it("unlimited lives: an attempt costs nothing, even at zero", () => {
+    const save = { ...newSave(lives, "2026-11-14"), lives: 0 };
+    save.settings = { ...save.settings, unlimitedLives: true };
+    expect(spendLife(save)?.lives).toBe(0);
+    expect(spendLife({ ...save, lives: 3 })?.lives).toBe(3);
+    expect(canAttempt(save)).toBe(true);
   });
 
   it("a new calendar day grants lives up to the cap, once", () => {

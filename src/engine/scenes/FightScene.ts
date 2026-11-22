@@ -167,6 +167,10 @@ export class FightScene extends Phaser.Scene {
         if (e.result === "hit") {
           audio.sfx(e.heavy ? "hit_heavy" : LIMB_SFX[e.limb]);
           this.fx.spark(e.x, y, e.ko ? "ko" : e.heavy ? "heavy" : "hit");
+          const target = sim.world.fighters.find((f) => f.id === e.targetId);
+          const attacker = sim.world.fighters.find((f) => f.id === e.attackerId);
+          const dir = target && attacker ? Math.sign(target.x - attacker.x) : 0;
+          this.fx.blood(e.x, y, depthToScreenY(e.z, FLOOR_TOP), dir, e.ko ? 22 : e.heavy ? 14 : 7);
           if (view) view.flash = 1;
           if (e.heavy) this.shake(110, 0.006);
           if (e.targetId === playerId) {

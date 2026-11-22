@@ -4,13 +4,13 @@ import { KEYBOARD_HELP } from "@/content/bindings";
 import { STAR_RULES } from "@/content/fighters/tuning";
 import { COMBO_LIST } from "@/content/moves/player";
 import { STRINGS } from "@/content/strings";
-import type { TownDef } from "@/content/towns/stLouis";
+import type { TownDef } from "@/content/towns";
 import type { FightResult } from "@/core/fight";
 import { computeStars, type Difficulty, type LevelRecord, type Settings } from "@/core/progress";
 import { audio } from "@/engine";
 
 import { Button } from "../primitives/Button";
-import { HeartIcon } from "../primitives/icons";
+import { BeltArt, HeartIcon } from "../primitives/icons";
 import { Portrait } from "../primitives/Portrait";
 import { Stars } from "../primitives/Stars";
 
@@ -171,6 +171,31 @@ export const Results = ({ town, result, onContinue }: { town: TownDef; result: F
   );
 };
 
+// ---------------------------------------------------------------- championship belt
+
+/** Shown once, the first time the city champion goes down: the belt is awarded. */
+export const BeltAward = ({ metroName, onContinue }: { metroName: string; onContinue: () => void }): ReactElement => {
+  useEffect(() => {
+    audio.sfx("win");
+    const t = setTimeout(() => audio.sfx("unlock"), 900);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div className="screen veil belt-screen">
+      <div className="center-col">
+        <div className="eyebrow">{metroName}</div>
+        <div className="belt-wrap">
+          <div className="belt-rays" aria-hidden />
+          <BeltArt className="belt-art" />
+        </div>
+        <h2 className="display belt-title">{STRINGS.beltTitle}</h2>
+        <p>{STRINGS.beltBody}</p>
+        <Button onPress={onContinue}>{STRINGS.continue}</Button>
+      </div>
+    </div>
+  );
+};
+
 // ---------------------------------------------------------------- knocked out / out of lives
 
 interface KnockedOutProps {
@@ -199,7 +224,7 @@ export const KnockedOut = ({ result, lives, onRetry, onMap }: KnockedOutProps): 
         </Button>
       </div>
       <span className="eyebrow" style={{ color: "var(--muted)", fontSize: "calc(var(--u) * 12)", letterSpacing: "0.14em" }}>
-        {STRINGS.retry} · {STRINGS.costsLife.toLowerCase()}
+        {STRINGS.costsLife}
       </span>
     </div>
   </div>
@@ -327,6 +352,10 @@ export const SettingsRows = ({ settings, onChange }: Pick<SettingsProps, "settin
         <Toggle on={settings.showHints} label={L.showHints} onChange={(v) => onChange({ showHints: v })} />
       </div>
       <div className="setting">
+        {L.unlimitedLives}
+        <Toggle on={settings.unlimitedLives} label={L.unlimitedLives} onChange={(v) => onChange({ unlimitedLives: v })} />
+      </div>
+      <div className="setting">
         {L.debug}
         <Toggle on={settings.debug} label={L.debug} onChange={(v) => onChange({ debug: v })} />
       </div>
@@ -400,8 +429,10 @@ export const Pause = ({ settings, onChange, onResume, onQuit }: PauseProps): Rea
           <SettingsRows settings={settings} onChange={onChange} />
         )}
         <div className="row" style={{ marginTop: "calc(var(--u) * 12)" }}>
-          <Button onPress={onResume}>{STRINGS.resume}</Button>
-          <Button variant="secondary" sound="back" onPress={onQuit}>
+          <Button onPress={onResume} padBack>
+            {STRINGS.resume}
+          </Button>
+          <Button variant="secondary" sound="back" padBack={false} onPress={onQuit}>
             {STRINGS.quit}
           </Button>
         </div>

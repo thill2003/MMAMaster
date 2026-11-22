@@ -15,6 +15,8 @@ export interface Settings {
   reduceShake: boolean;
   showHints: boolean;
   debug: boolean;
+  /** Attempts cost no life. Off by default. */
+  unlimitedLives: boolean;
 }
 
 export interface LevelRecord {
@@ -81,6 +83,7 @@ export const DEFAULT_SETTINGS: Settings = {
   reduceShake: false,
   showHints: true,
   debug: false,
+  unlimitedLives: true,
 };
 
 export const SAVE_VERSION = 1;
@@ -136,8 +139,14 @@ export const grantDaily = (save: SaveData, today: string, rules: LivesRules): { 
   return { save: { ...save, lives, lastGrantDate: today }, granted: lives - save.lives };
 };
 
-/** Every attempt at a level costs one life. Returns null when there are none left. */
-export const spendLife = (save: SaveData): SaveData | null => (save.lives > 0 ? { ...save, lives: save.lives - 1 } : null);
+/** A fight can start while there are lives left, or when lives are unlimited. Starting one is free. */
+export const canAttempt = (save: SaveData): boolean => save.settings.unlimitedLives || save.lives > 0;
+
+/** Losing a fight — a KO by damage or by the clock — costs one life, unless lives are unlimited. Returns null when there are none left. */
+export const spendLife = (save: SaveData): SaveData | null => {
+  if (save.settings.unlimitedLives) return save;
+  return save.lives > 0 ? { ...save, lives: save.lives - 1 } : null;
+};
 
 export const computeStars = (o: FightOutcome, rules: StarRules): [boolean, boolean, boolean] => [
   o.won,
@@ -170,6 +179,10 @@ export const isUnlocked = (save: SaveData, order: readonly string[], levelId: st
 /** The node the map highlights: the first level not yet cleared (or the last one when all are). */
 export const currentLevel = (save: SaveData, order: readonly string[]): string =>
   order.find((id) => !save.levels[id]?.cleared) ?? order[order.length - 1];
+
+/** The championship belt is won by clearing the last level of the metro — the city champion. */
+export const hasBelt = (save: SaveData, order: readonly string[]): boolean =>
+  order.length > 0 && !!save.levels[order[order.length - 1]]?.cleared;
 
 export const totalStars = (save: SaveData): number => Object.values(save.levels).reduce((n, r) => n + starCount(r.stars), 0);
 

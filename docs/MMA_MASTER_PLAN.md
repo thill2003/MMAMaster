@@ -68,7 +68,7 @@ A side-scrolling beat 'em up in the line of the original TMNT and Simpsons arcad
 
 **The clock.** Every level has a Kung-Fu Master countdown, shown top center. It runs while you fight and pauses in menus. Hitting zero is a KO — a time-out, not a game over. Clock length is per level in `content/towns`, set generous at first (a clean run uses about half of it) and tightened by playtest; the remaining clock at the finish feeds the third star and the time bonus.
 
-**Lives.** Every attempt at a level costs one life. A KO — by damage or by the clock — ends the attempt, and the retry starts the entire level over; there is no checkpoint at the leader. Opening the game on a new calendar day grants X lives, capped at Y (both in content); when you're out, an Out of Lives screen says when the next grant comes. v1 reads the device date; server time arrives with accounts in v1.1. Finishing a level doesn't refund the life.
+**Lives.** Starting a level is free while you have lives; losing one costs a life. A KO — by damage or by the clock — ends the attempt, and the retry starts the entire level over; there is no checkpoint at the leader. Opening the game on a new calendar day grants X lives, capped at Y (both in content); when you're out, an Out of Lives screen says when the next grant comes. v1 reads the device date; server time arrives with accounts in v1.1. Winning or quitting to the map costs nothing.
 
 **Health bars.** One player bar for the whole level, restored only by energy drinks. Grunts show no bar — they drop in a few clean hits. The gym leader and the champion get their own bar and name plate that appear when that fight starts, Kung-Fu Master style.
 

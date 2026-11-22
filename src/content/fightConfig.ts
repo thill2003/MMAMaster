@@ -14,7 +14,7 @@ import {
 } from "./fighters/tuning";
 import { ENEMY_CLINCH, ENEMY_STRIKES } from "./moves/enemies";
 import { PLAYER_MOVES } from "./moves/player";
-import type { TownDef } from "./towns/stLouis";
+import { metroOf, type TownDef } from "./towns";
 
 /** Everything one attempt at a town needs, assembled from content. */
 export const buildFightConfig = (
@@ -34,7 +34,7 @@ export const buildFightConfig = (
   inputTuning: INPUT_TUNING,
   score: SCORE_RULES,
   difficulty: DIFFICULTIES[difficulty],
-  ramp: rampFor(town.index, opts.metroIndex ?? 0),
+  ramp: rampFor(town.index, opts.metroIndex ?? metroOf(town).index),
   item: ITEM_RULES,
   viewWidth,
   invincible: opts.invincible,

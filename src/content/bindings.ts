@@ -42,4 +42,18 @@ export const GAMEPAD_BUTTONS: Record<number, Action> = {
 
 export const GAMEPAD_STICK_DEADZONE = 0.4;
 
+/** Standard-mapping gamepad buttons for the menus, and Start to pause a fight. */
+export const GAMEPAD_MENU = {
+  confirm: [0], // A / Cross
+  back: [1], // B / Circle
+  pause: [9], // Start / Options
+  up: [12],
+  down: [13],
+  left: [14],
+  right: [15],
+} as const;
+
+/** Menu repeat while a direction is held, in ms; and how long a newly opened menu ignores confirm. */
+export const GAMEPAD_MENU_TIMING = { repeatDelay: 380, repeatEvery: 130, confirmGrace: 400 } as const;
+
 export const KEYBOARD_HELP = "Move: arrows / WASD · Guard: Space · Punch J · Kick K · Elbow U · Knee I · Drink E · Pause Esc";

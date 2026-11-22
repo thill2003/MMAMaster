@@ -1,13 +1,14 @@
 import { type ReactElement, useEffect, useMemo, useRef } from "react";
 
 import { STRINGS } from "@/content/strings";
-import { MAP_SIZE, type TownDef } from "@/content/towns/stLouis";
-import { bestTotalScore, currentLevel, isUnlocked, type SaveData, starCount, totalStars } from "@/core/progress";
+import { MAP_SIZE, type MetroDef } from "@/content/towns";
+import { currentLevel, hasBelt, isUnlocked, type SaveData, starCount } from "@/core/progress";
 import { audio } from "@/engine";
-import { Rng } from "@/shared/rng";
 
 import { Button } from "../primitives/Button";
-import { BackIcon, GearIcon, HeartIcon, StarIcon } from "../primitives/icons";
+import { BackIcon, BeltIcon, GearIcon, HeartIcon, StarIcon } from "../primitives/icons";
+
+import { MetroArt } from "./MetroArt";
 
 const hex = (n: number): string => `#${n.toString(16).padStart(6, "0")}`;
 
@@ -20,7 +21,13 @@ const segment = (a: { x: number; y: number }, b: { x: number; y: number }): stri
 const STAR_PATH = "M0 -9l2.6 5.6 6.1.7-4.5 4.2 1.2 6L0 4.5l-5.4 3 1.2-6-4.5-4.2 6.1-.7z";
 
 interface Props {
-  towns: TownDef[];
+  metro: MetroDef;
+  /** The metro's gyms can be fought: it is the first, or the one before it has been won. */
+  open: boolean;
+  /** The metro before this one, for the locked hint and the back arrow; null on the first. */
+  prev: MetroDef | null;
+  next: MetroDef | null;
+  onMetro: (metroId: string) => void;
   save: SaveData;
   /** A level cleared a moment ago: draw the path on to the next node and pop it open. */
   justCleared: string | null;
@@ -30,12 +37,27 @@ interface Props {
 }
 
 /**
- * The metro map (plan §4): a tall, scrolling map of the St. Louis area with numbered gym badges on a
- * winding path from Fenton at the bottom to the champion under the Arch at the top. Stylized — rivers,
+ * The metro map (plan §4): a tall, scrolling map of one metro with numbered gym badges on a winding path from
+ * the first suburb at the bottom to the champion at the top. The arrows step between tour stops (MM-200). Stylized — rivers,
  * bluffs, suburbs, city blocks — and deliberately free of currencies, timers, events or a store.
  */
-export const MetroMap = ({ towns, save, justCleared, onPick, onBack, onSettings }: Props): ReactElement => {
+export const MetroMap = ({
+  metro,
+  open: metroOpen,
+  prev,
+  next,
+  onMetro,
+  save,
+  justCleared,
+  onPick,
+  onBack,
+  onSettings,
+}: Props): ReactElement => {
+  const towns = metro.towns;
   const scroller = useRef<HTMLDivElement>(null);
+  const name = STRINGS.metroNames[metro.id] ?? metro.id;
+  const stars = towns.reduce((n, t) => n + starCount(save.levels[t.id]?.stars ?? []), 0);
+  const score = towns.reduce((n, t) => n + (save.levels[t.id]?.bestScore ?? 0), 0);
   const order = useMemo(() => towns.map((t) => t.id), [towns]);
   const current = currentLevel(save, order);
   const currentIndex = order.indexOf(current);
@@ -59,37 +81,6 @@ export const MetroMap = ({ towns, save, justCleared, onPick, onBack, onSettings 
     }
   }, [towns, currentIndex, clearedIndex]);
 
-  // Scenery is seeded, so the map is the same every time.
-  const scenery = useMemo(() => {
-    const rng = new Rng(4242);
-    const trees: Array<{ x: number; y: number; r: number }> = [];
-    const houses: Array<{ x: number; y: number; c: string }> = [];
-    const blocks: Array<{ x: number; y: number; w: number; h: number; tall: boolean }> = [];
-    const clear = (x: number, y: number, d: number) => towns.every((t) => Math.hypot(t.map.x - x, t.map.y - y) > d);
-    for (let i = 0; i < 260; i++) {
-      const x = rng.range(20, 980);
-      const y = rng.range(1480, 2380);
-      if (clear(x, y, 90)) trees.push({ x, y, r: rng.range(9, 18) });
-    }
-    for (let i = 0; i < 90; i++) {
-      const x = rng.range(40, 960);
-      const y = rng.range(1500, 2200);
-      if (clear(x, y, 100)) houses.push({ x, y, c: rng.pick(["#d9c9a8", "#c9b08c", "#e2d6c0", "#b8a184"]) });
-    }
-    for (let gy = 40; gy < 1380; gy += 62) {
-      for (let gx = 30; gx < 960; gx += 74) {
-        // Leave the river corridor and the nodes clear.
-        const riverX = gy < 1040 ? 760 + (gy / 1040) * 60 - Math.max(0, gy - 600) * 0.35 : 690 + (gy - 1040) * 0.2;
-        if (gx > riverX - 110) continue;
-        if (!clear(gx + 28, gy + 22, 86)) continue;
-        if (rng.chance(0.2)) continue;
-        const downtown = Math.hypot(gx - 520, gy - 1130) < 240 || Math.hypot(gx - 500, gy - 260) < 220;
-        blocks.push({ x: gx + rng.range(-4, 4), y: gy + rng.range(-4, 4), w: rng.range(44, 60), h: rng.range(34, 46), tall: downtown });
-      }
-    }
-    return { trees, houses, blocks };
-  }, [towns]);
-
   return (
     <div className="screen opaque map-screen">
       <aside className="map-side">
@@ -103,14 +94,28 @@ export const MetroMap = ({ towns, save, justCleared, onPick, onBack, onSettings 
           </Button>
         </div>
         <div>
-          <div className="sub">Tour stop 1</div>
-          <h1 className="display">{STRINGS.metroTitle}</h1>
+          <div className="row tour-row">
+            <Button
+              className="icon-btn small"
+              sound="back"
+              onPress={() => prev && onMetro(prev.id)}
+              label={STRINGS.prevStop}
+              disabled={!prev}
+            >
+              ‹
+            </Button>
+            <div className="sub grow">{STRINGS.tourStop(metro.index + 1)}</div>
+            <Button className="icon-btn small" onPress={() => next && onMetro(next.id)} label={STRINGS.nextStop} disabled={!next}>
+              ›
+            </Button>
+          </div>
+          <h1 className="display">{name}</h1>
         </div>
         <div className="stat">
           {STRINGS.totalStars}
           <b>
             <StarIcon on className="heart" />
-            {totalStars(save)}/{towns.length * 3}
+            {stars}/{towns.length * 3}
           </b>
         </div>
         <div className="stat">
@@ -121,15 +126,22 @@ export const MetroMap = ({ towns, save, justCleared, onPick, onBack, onSettings 
           </b>
         </div>
         <div className="stat">
+          {STRINGS.belt}
+          <b>
+            <BeltIcon on={hasBelt(save, order)} className="heart" />
+            {hasBelt(save, order) ? STRINGS.beltWon : STRINGS.beltNotYet}
+          </b>
+        </div>
+        <div className="stat">
           {STRINGS.bestScore}
-          <b>{bestTotalScore(save).toLocaleString()}</b>
+          <b>{score.toLocaleString()}</b>
         </div>
         <span className="grow" />
-        <div className="sub">Tap a gym to fight</div>
+        <div className="sub">{metroOpen || !prev ? STRINGS.tapGym : STRINGS.stopLocked(STRINGS.metroNames[prev.id] ?? prev.id)}</div>
       </aside>
 
       <div className="map-scroll" ref={scroller}>
-        <svg viewBox={`0 0 ${MAP_SIZE.width} ${MAP_SIZE.height}`} role="img" aria-label={STRINGS.metroTitle}>
+        <svg viewBox={`0 0 ${MAP_SIZE.width} ${MAP_SIZE.height}`} role="img" aria-label={name}>
           <defs>
             <linearGradient id="land" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stopColor="#4a4f63" />
@@ -145,71 +157,7 @@ export const MetroMap = ({ towns, save, justCleared, onPick, onBack, onSettings 
           </defs>
           <rect width={MAP_SIZE.width} height={MAP_SIZE.height} fill="url(#land)" />
 
-          {/* bluffs in the south */}
-          <path
-            d="M0 2400 L0 2180 Q120 2100 240 2190 Q360 2090 470 2200 Q600 2120 720 2210 Q860 2110 1000 2200 L1000 2400Z"
-            fill="#244a30"
-            opacity="0.7"
-          />
-
-          {/* city blocks */}
-          {scenery.blocks.map((b, i) => (
-            <g key={`b${i}`}>
-              <rect x={b.x} y={b.y} width={b.w} height={b.h} rx="3" fill={b.tall ? "#6d7388" : "#5b6072"} />
-              {b.tall && <rect x={b.x + 4} y={b.y - 10} width={b.w - 8} height={b.h} rx="3" fill="#868da3" />}
-            </g>
-          ))}
-
-          {/* rivers: the Mississippi down the east side, the Missouri across the middle, the Meramec in the south */}
-          <g fill="none" strokeLinecap="round">
-            <path
-              d="M760 -20 C820 300 900 700 700 1040 C620 1180 640 1300 760 1420 C840 1500 940 1520 1020 1530"
-              stroke="#1f4f86"
-              strokeWidth="84"
-            />
-            <path
-              d="M760 -20 C820 300 900 700 700 1040 C620 1180 640 1300 760 1420 C840 1500 940 1520 1020 1530"
-              stroke="#3c84c9"
-              strokeWidth="64"
-            />
-            <path d="M-20 1650 C250 1600 480 1740 640 1700 C800 1660 900 1640 1020 1690" stroke="#1f4f86" strokeWidth="56" />
-            <path d="M-20 1650 C250 1600 480 1740 640 1700 C800 1660 900 1640 1020 1690" stroke="#3c84c9" strokeWidth="40" />
-            <path d="M-20 2330 C200 2290 380 2360 560 2320 C700 2290 860 2330 1020 2300" stroke="#3c84c9" strokeWidth="18" />
-            <path
-              d="M760 -20 C820 300 900 700 700 1040 C620 1180 640 1300 760 1420"
-              stroke="rgba(255,255,255,0.18)"
-              strokeWidth="4"
-              strokeDasharray="30 50"
-            />
-          </g>
-          <text x="842" y="640" fill="rgba(255,255,255,0.5)" fontSize="22" fontStyle="italic" transform="rotate(74 842 640)">
-            Mississippi
-          </text>
-          <text x="150" y="1640" fill="rgba(255,255,255,0.5)" fontSize="20" fontStyle="italic" transform="rotate(-4 150 1640)">
-            Missouri
-          </text>
-
-          {/* suburbs and trees */}
-          {scenery.houses.map((h, i) => (
-            <g key={`h${i}`} transform={`translate(${h.x} ${h.y})`}>
-              <rect x="-9" y="-6" width="18" height="12" fill={h.c} />
-              <path d="M-12 -6L0 -15L12 -6Z" fill="#8a4a3a" />
-            </g>
-          ))}
-          {scenery.trees.map((t, i) => (
-            <g key={`t${i}`}>
-              <circle cx={t.x + 3} cy={t.y + 4} r={t.r} fill="rgba(0,0,0,0.22)" />
-              <circle cx={t.x} cy={t.y} r={t.r} fill={i % 3 === 0 ? "#2f7a44" : "#256a39"} />
-              <circle cx={t.x - t.r * 0.3} cy={t.y - t.r * 0.3} r={t.r * 0.45} fill="rgba(255,255,255,0.12)" />
-            </g>
-          ))}
-
-          {/* the Arch, over the champion's node */}
-          <g fill="none" strokeLinecap="round">
-            <path d="M330 360 C350 -70 650 -70 670 360" stroke="rgba(0,0,0,0.3)" strokeWidth="34" transform="translate(8 10)" />
-            <path d="M330 360 C350 -70 650 -70 670 360" stroke="url(#steel)" strokeWidth="30" />
-            <path d="M330 360 C350 -70 650 -70 670 360" stroke="rgba(255,255,255,0.6)" strokeWidth="5" transform="translate(-6 0)" />
-          </g>
+          <MetroArt metro={metro.id} towns={towns} />
 
           {/* the path: the whole route dimmed, the part you've won in gold */}
           <g fill="none" strokeLinecap="round">
@@ -245,8 +193,8 @@ export const MetroMap = ({ towns, save, justCleared, onPick, onBack, onSettings 
           {/* nodes */}
           {towns.map((t, i) => {
             const rec = save.levels[t.id];
-            const open = isUnlocked(save, order, t.id);
-            const isCurrent = t.id === current && !rec?.cleared;
+            const open = metroOpen && isUnlocked(save, order, t.id);
+            const isCurrent = metroOpen && t.id === current && !rec?.cleared;
             const r = t.isChampion ? 58 : 42;
             const fill = !open ? "#4b4d5c" : rec?.cleared ? hex(t.theme.gymColor) : "#d62828";
             const ring = !open ? "#2c2d38" : rec?.cleared ? hex(t.theme.gymTrim) : "#f2c14e";
@@ -256,6 +204,10 @@ export const MetroMap = ({ towns, save, justCleared, onPick, onBack, onSettings 
                 key={t.id}
                 className="node"
                 transform={`translate(${t.map.x} ${t.map.y})`}
+                role="button"
+                tabIndex={0}
+                aria-label={t.name}
+                data-pad-first={t.id === current || undefined}
                 onClick={() => {
                   audio.unlock();
                   audio.sfx(open ? "ui_tap" : "ui_back");

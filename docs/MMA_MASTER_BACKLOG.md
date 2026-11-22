@@ -64,7 +64,7 @@ Stories grouped by epic, in rough build order. Every gap from the plan's §13 is
 
 - **MM-060** Gauntlet engine: spawn by scroll distance, density curve, roster mix, set-piece holds, leader trigger. (L)
 - **MM-061** Level clock in ticks: HUD countdown, warning SFX, time-out KO. (S)
-- **MM-062** Knocked Out screen: Retry (costs a life, restarts the level), Back to map, lives remaining. (S)
+- **MM-062** Knocked Out screen: Retry (restarts the level), Back to map, lives remaining. (S)
 - **MM-063** Superseded by MM-070 — no leader checkpoint; a life always retries the entire level.
 - **MM-064** Score: hits scaled by combo, limb-variety bonus, time and health bonuses, all rates in content. (M)
 - **MM-065** Stars: finish, at least half health, at least a quarter clock; results breakdown. (S)
@@ -72,7 +72,7 @@ Stories grouped by epic, in rough build order. Every gap from the plan's §13 is
 - **MM-067** Level length targets per town as numbers: scroll distance, enemy count, minutes, clock length. (S)
 - **MM-068** Camera: scroll, holds, lead; depth sort by y; parallax. (M)
 - **MM-069** Street kit variations: time of day, color grade, signage swaps. (S)
-- **MM-070** Lives: every attempt at a level costs one life; a KO by damage or by the clock ends the attempt and the retry starts the entire level over. Lives count shown on the map and in the HUD; a finished level does not refund the life. (M)
+- **MM-070** Lives: losing a level costs one life (starting or quitting one is free); a KO by damage or by the clock ends the attempt and the retry starts the entire level over. Lives count shown on the map and in the HUD. (M)
 - **MM-071** Daily tries: opening the game on a new calendar day grants X lives, capped at Y (both in content); an out-of-lives screen says when the next grant comes. Local device date for v1 (acceptable risk), server time when accounts arrive in v1.1. (M)
 - **MM-072** Health bars: one player bar for the whole level; grunts show no bar; the gym leader and the champion get their own bar with a name plate that appears when that fight starts, Kung-Fu Master style. (S)
 

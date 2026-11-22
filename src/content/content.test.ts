@@ -7,7 +7,7 @@ import { buildFightConfig } from "./fightConfig";
 import { ARCHETYPES, INPUT_TUNING } from "./fighters/tuning";
 import { ENEMY_STRIKES } from "./moves/enemies";
 import { PLAYER_MOVES } from "./moves/player";
-import { ST_LOUIS, TOWN_ORDER, townById } from "./towns/stLouis";
+import { ALL_TOWNS, METROS, TOWN_ORDER, townById } from "./towns";
 
 const VIEW = 960;
 
@@ -42,19 +42,32 @@ describe("content integrity", () => {
       if (a.followUp) expect(ENEMY_STRIKES[a.followUp]).toBeDefined();
       if (a.pushStrike) expect(ENEMY_STRIKES[a.pushStrike]).toBeDefined();
     }
-    for (const t of ST_LOUIS) {
+    for (const t of ALL_TOWNS) {
       for (const id of Object.values(t.leader.boss.strikes)) expect(ENEMY_STRIKES[id], `${t.id}:${id}`).toBeDefined();
     }
   });
 
-  it("towns are in order, unique, and only use known archetypes", () => {
-    expect(new Set(TOWN_ORDER).size).toBe(ST_LOUIS.length);
-    ST_LOUIS.forEach((t, i) => {
-      expect(t.index).toBe(i);
-      for (const s of t.segments) for (const k of Object.keys(s.mix)) expect(ARCHETYPES[k], `${t.id}:${k}`).toBeDefined();
-      for (const h of t.holds) for (const m of h.pack) expect(ARCHETYPES[m.kind]).toBeDefined();
+  it("towns are in order, unique across the tour, and only use known archetypes", () => {
+    expect(new Set(TOWN_ORDER).size).toBe(ALL_TOWNS.length);
+    expect(new Set(ALL_TOWNS.map((t) => t.leader.id)).size).toBe(ALL_TOWNS.length);
+    METROS.forEach((metro, m) => {
+      expect(metro.index).toBe(m);
+      metro.towns.forEach((t, i) => {
+        expect(t.index).toBe(i);
+        expect(t.metro).toBe(metro.id);
+        for (const s of t.segments) for (const k of Object.keys(s.mix)) expect(ARCHETYPES[k], `${t.id}:${k}`).toBeDefined();
+        for (const h of t.holds) for (const m of h.pack) expect(ARCHETYPES[m.kind]).toBeDefined();
+      });
+      expect(metro.towns.filter((t) => t.isChampion).length).toBe(1);
+      expect(metro.towns[metro.towns.length - 1].isChampion).toBe(true);
     });
-    expect(ST_LOUIS[ST_LOUIS.length - 1].isChampion).toBe(true);
+  });
+
+  it("Chicago enemies are tougher than St. Louis enemies at the same level", () => {
+    const stl = buildFightConfig(townById("fenton")!, "normal", VIEW).ramp;
+    const chi = buildFightConfig(townById("joliet")!, "normal", VIEW).ramp;
+    expect(chi.enemyHp).toBeGreaterThan(stl.enemyHp);
+    expect(chi.enemyDamage).toBeGreaterThan(stl.enemyDamage);
   });
 
   it("the tap strings on Punch are five long and true combos (each hit lands before hit-stun ends)", () => {

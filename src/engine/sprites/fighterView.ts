@@ -134,6 +134,119 @@ const limb = (g: Phaser.GameObjects.Graphics, a: Pt, b: Pt, w: number, color: nu
 
 const lerpPt = (a: Pt, b: Pt, t: number): Pt => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
 
+/**
+ * A limb with a muscle belly between t0 and t1, `swell` times its width. The belly's outline sits under the
+ * limb and its fill on top, so the bulge reads as one shape with the limb.
+ */
+const muscleLimb = (
+  g: Phaser.GameObjects.Graphics,
+  a: Pt,
+  b: Pt,
+  w: number,
+  color: number,
+  t0: number,
+  t1: number,
+  swell: number,
+): void => {
+  if (swell <= 1) {
+    limb(g, a, b, w, color);
+    return;
+  }
+  const p0 = lerpPt(a, b, t0);
+  const p1 = lerpPt(a, b, t1);
+  const bw = w * swell;
+  capsule(g, p0, p1, bw + 3.5, OUTLINE);
+  limb(g, a, b, w, color);
+  capsule(g, p0, p1, bw, color);
+  // the lit side of the belly
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const sgn = dx / len > 0 ? -1 : 1;
+  const nx = (-dy / len) * bw * 0.22 * sgn;
+  const ny = (dx / len) * bw * 0.22 * sgn;
+  g.lineStyle(bw * 0.26, shade(color, 1.2), 0.85);
+  g.lineBetween(p0.x + nx, p0.y + ny, p1.x + nx, p1.y + ny);
+};
+
+/** Unit direction and unit normal of the segment a→b. */
+const frame = (a: Pt, b: Pt): { ux: number; uy: number; nx: number; ny: number } => {
+  const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  const ux = (b.x - a.x) / len;
+  const uy = (b.y - a.y) / len;
+  return { ux, uy, nx: -uy, ny: ux };
+};
+
+/** A tattooed band along a limb from t0 to t1: an edge ring at each end and a zigzag between. */
+const inkBand = (g: Phaser.GameObjects.Graphics, a: Pt, b: Pt, t0: number, t1: number, w: number, ink: number): void => {
+  const { nx, ny } = frame(a, b);
+  const half = w * 0.42;
+  const p0 = lerpPt(a, b, t0);
+  const p1 = lerpPt(a, b, t1);
+  g.lineStyle(1.8, ink, 0.9);
+  g.lineBetween(p0.x - nx * half, p0.y - ny * half, p0.x + nx * half, p0.y + ny * half);
+  g.lineBetween(p1.x - nx * half, p1.y - ny * half, p1.x + nx * half, p1.y + ny * half);
+  const steps = 5;
+  g.lineStyle(1.5, ink, 0.85);
+  g.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const q = lerpPt(p0, p1, i / steps);
+    const side = (i % 2 === 0 ? -1 : 1) * half * 0.75;
+    if (i === 0) g.moveTo(q.x + nx * side, q.y + ny * side);
+    else g.lineTo(q.x + nx * side, q.y + ny * side);
+  }
+  g.strokePath();
+};
+
+/** An original geometric chest piece: a diamond with a centre dot and three rays above it. */
+const chestPiece = (g: Phaser.GameObjects.Graphics, hip: Pt, shoulder: Pt, w: number, ink: number): void => {
+  const { ux, uy, nx, ny } = frame(hip, shoulder);
+  const c = lerpPt(hip, shoulder, 0.68);
+  const r = w * 0.22;
+  const pt = (along: number, across: number): Pt => ({ x: c.x + ux * along + nx * across, y: c.y + uy * along + ny * across });
+  const top = pt(r * 1.3, 0);
+  const right = pt(0, r);
+  const bottom = pt(-r * 1.3, 0);
+  const left = pt(0, -r);
+  g.lineStyle(1.6, ink, 0.85);
+  g.strokePoints([top, right, bottom, left], true);
+  g.fillStyle(ink, 0.9);
+  g.fillCircle(c.x, c.y, 1.6);
+  for (const across of [-r * 0.8, 0, r * 0.8]) {
+    const from = pt(r * 1.6, across * 0.6);
+    const to = pt(r * 2.6, across);
+    g.lineBetween(from.x, from.y, to.x, to.y);
+  }
+};
+
+/** Pec line and a six-pack, shaded into the torso. */
+const torsoMuscles = (g: Phaser.GameObjects.Graphics, hip: Pt, shoulder: Pt, w: number, color: number, m: number): void => {
+  const { ux, uy, nx, ny } = frame(hip, shoulder);
+  const at = (t: number, across: number): Pt => {
+    const p = lerpPt(hip, shoulder, t);
+    return { x: p.x + nx * across, y: p.y + ny * across };
+  };
+  g.lineStyle(1.8, color, 0.55 + 0.35 * m);
+  // pecs: two shallow arcs meeting at the sternum
+  for (const side of [-1, 1]) {
+    const inner = at(0.8, 0);
+    const mid = at(0.78, side * w * 0.22);
+    const outer = at(0.86, side * w * 0.42);
+    g.lineBetween(inner.x, inner.y, mid.x, mid.y);
+    g.lineBetween(mid.x, mid.y, outer.x, outer.y);
+  }
+  // abs: a centre line and three rungs
+  const top = at(0.56, 0);
+  const bottom = at(0.32, 0);
+  g.lineBetween(top.x, top.y, bottom.x, bottom.y);
+  g.lineStyle(1.4, color, 0.45 + 0.35 * m);
+  for (const t of [0.38, 0.45, 0.52]) {
+    const l = at(t, -w * 0.2);
+    const r = at(t, w * 0.2);
+    g.lineBetween(l.x + ux * 0.5, l.y + uy * 0.5, r.x + ux * 0.5, r.y + uy * 0.5);
+  }
+};
+
 /** A glove at `hand`, its forearm coming from `elbow`. */
 const glove = (
   g: Phaser.GameObjects.Graphics,
@@ -190,6 +303,10 @@ const glove = (
 export const drawFighter = (g: Phaser.GameObjects.Graphics, pose: Pose, look: FighterLook, opts: DrawOptions): void => {
   const sk = solve(pose);
   const bulk = look.bulk;
+  const m = look.muscle ?? 0;
+  const bicep = 1 + 0.42 * m;
+  const calf = 1 + 0.3 * m;
+  const quad = 1 + 0.15 * m;
   const white = 0xffffff;
   const c = (color: number) => toward(color, white, opts.flash);
   const skin = c(look.skin);
@@ -208,22 +325,29 @@ export const drawFighter = (g: Phaser.GameObjects.Graphics, pose: Pose, look: Fi
   }
 
   // --- far side: lead arm and lead leg
-  limb(g, sk.hip, sk.kneeF, DIM.thighW * bulk, skinFar);
-  limb(g, sk.kneeF, sk.footF, DIM.shinW * bulk, skinFar);
+  muscleLimb(g, sk.hip, sk.kneeF, DIM.thighW * bulk, skinFar, 0.3, 0.7, quad);
+  muscleLimb(g, sk.kneeF, sk.footF, DIM.shinW * bulk, skinFar, 0.12, 0.42, calf);
   capsule(g, sk.footF, { x: sk.footF.x + 7 * pose.turn, y: sk.footF.y + 1 }, DIM.foot + 3, OUTLINE);
   capsule(g, sk.footF, { x: sk.footF.x + 7 * pose.turn, y: sk.footF.y + 1 }, DIM.foot, skinFar);
   capsule(g, sk.hip, lerpPt(sk.hip, sk.kneeF, 0.55), (DIM.thighW + 5) * bulk, shortsFar);
-  limb(g, sk.shoulder, sk.elbowF, DIM.armW * bulk, skinFar);
-  limb(g, sk.elbowF, sk.handF, DIM.foreArmW * bulk, skinFar);
+  muscleLimb(g, sk.shoulder, sk.elbowF, DIM.armW * bulk, skinFar, 0.3, 0.68, bicep);
+  muscleLimb(g, sk.elbowF, sk.handF, DIM.foreArmW * bulk, skinFar, 0.1, 0.4, calf);
+  if (look.tattoo !== undefined) {
+    const inkFar = c(shade(look.tattoo, 0.8));
+    inkBand(g, sk.shoulder, sk.elbowF, 0.2, 0.85, DIM.armW * bulk, inkFar);
+    inkBand(g, sk.elbowF, sk.handF, 0.15, 0.45, DIM.foreArmW * bulk, inkFar);
+  }
   glove(g, sk.elbowF, sk.handF, DIM.glove * bulk, glovesFar, skinFar, look.gloveStyle, false);
 
   // --- torso
-  const torsoW = 21 * bulk;
+  const torsoW = 21 * bulk * (1 + 0.1 * m);
   capsule(g, sk.hip, sk.shoulder, torsoW + 4, OUTLINE);
   capsule(g, sk.hip, sk.shoulder, torsoW, skin);
   g.lineStyle(torsoW * 0.3, c(shade(look.skin, 1.16)), 0.9);
   const tl = lerpPt(sk.hip, sk.shoulder, 0.3);
   g.lineBetween(tl.x + 3 * pose.turn, tl.y, sk.shoulder.x + 3 * pose.turn, sk.shoulder.y + 4);
+  if (m > 0) torsoMuscles(g, sk.hip, sk.shoulder, torsoW, c(shade(look.skin, 0.72)), m);
+  if (look.tattoo !== undefined) chestPiece(g, sk.hip, sk.shoulder, torsoW, c(look.tattoo));
   // shorts: waistband to mid-thigh
   const waist = lerpPt(sk.hip, sk.shoulder, 0.2);
   capsule(g, sk.hip, waist, torsoW + 3, shorts);
@@ -272,21 +396,33 @@ export const drawFighter = (g: Phaser.GameObjects.Graphics, pose: Pose, look: Fi
   g.lineBetween(sk.head.x + face * hr * 0.22, sk.head.y - hr * 0.32, sk.head.x + face * hr * 0.75, sk.head.y - hr * 0.22);
 
   // --- near side: rear leg and rear arm
-  limb(g, sk.hip, sk.kneeB, DIM.thighW * bulk, skin);
-  limb(g, sk.kneeB, sk.footB, DIM.shinW * bulk, skin);
+  muscleLimb(g, sk.hip, sk.kneeB, DIM.thighW * bulk, skin, 0.3, 0.7, quad);
+  muscleLimb(g, sk.kneeB, sk.footB, DIM.shinW * bulk, skin, 0.12, 0.42, calf);
+  if (look.tattoo !== undefined) inkBand(g, sk.kneeB, sk.footB, 0.25, 0.55, DIM.shinW * bulk, c(look.tattoo));
   capsule(g, sk.footB, { x: sk.footB.x + 7 * pose.turn, y: sk.footB.y + 1 }, DIM.foot + 3, OUTLINE);
   capsule(g, sk.footB, { x: sk.footB.x + 7 * pose.turn, y: sk.footB.y + 1 }, DIM.foot, skin);
   const shortEnd = lerpPt(sk.hip, sk.kneeB, 0.58);
   capsule(g, sk.hip, shortEnd, (DIM.thighW + 5) * bulk, shorts);
   g.lineStyle(2.6, trim, 1);
   g.lineBetween(shortEnd.x - 6 * bulk, shortEnd.y, shortEnd.x + 6 * bulk, shortEnd.y);
-  limb(g, sk.shoulder, sk.elbowB, DIM.armW * bulk, skin);
+  if (m > 0) {
+    // deltoid: a round cap on the near shoulder
+    const delt = lerpPt(sk.shoulder, sk.elbowB, 0.08);
+    const dr = DIM.armW * bulk * (0.62 + 0.18 * m);
+    g.fillStyle(OUTLINE, 1);
+    g.fillCircle(delt.x, delt.y, dr + 1.8);
+    g.fillStyle(skin, 1);
+    g.fillCircle(delt.x, delt.y, dr);
+  }
+  muscleLimb(g, sk.shoulder, sk.elbowB, DIM.armW * bulk, skin, 0.3, 0.68, bicep);
+  if (look.tattoo !== undefined) inkBand(g, sk.shoulder, sk.elbowB, 0.15, 0.85, DIM.armW * bulk, c(look.tattoo));
   if (opts.armband !== null) {
     const a0 = lerpPt(sk.shoulder, sk.elbowB, 0.35);
     const a1 = lerpPt(sk.shoulder, sk.elbowB, 0.6);
     capsule(g, a0, a1, DIM.armW * bulk + 3, OUTLINE);
     capsule(g, a0, a1, DIM.armW * bulk + 1, c(opts.armband));
   }
-  limb(g, sk.elbowB, sk.handB, DIM.foreArmW * bulk, skin);
+  muscleLimb(g, sk.elbowB, sk.handB, DIM.foreArmW * bulk, skin, 0.1, 0.4, calf);
+  if (look.tattoo !== undefined) inkBand(g, sk.elbowB, sk.handB, 0.15, 0.45, DIM.foreArmW * bulk, c(look.tattoo));
   glove(g, sk.elbowB, sk.handB, DIM.glove * bulk, gloves, skin, look.gloveStyle, true);
 };

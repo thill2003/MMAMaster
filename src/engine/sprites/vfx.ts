@@ -10,6 +10,30 @@ interface Spark {
   seed: number;
 }
 
+interface Drop {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  r: number;
+  floorY: number;
+}
+
+interface Stain {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  life: number;
+}
+
+const BLOOD = 0xb3121c;
+const BLOOD_DARK = 0x6e0a10;
+const GRAVITY = 0.35;
+const STAIN_LIFE = 600; // frames a floor stain stays before it is gone
+const STAIN_FADE = 120;
+const MAX_STAINS = 80;
+
 interface Floater {
   t: Phaser.GameObjects.Text;
   life: number;
@@ -32,11 +56,43 @@ export class Fx {
   private sparks: Spark[] = [];
   private pool: Phaser.GameObjects.Graphics[] = [];
   private floaters: Floater[] = [];
+  private drops: Drop[] = [];
+  private stains: Stain[] = [];
+  private readonly dropsG: Phaser.GameObjects.Graphics;
+  private readonly stainsG: Phaser.GameObjects.Graphics;
+  private noise = 0x2f6b9d;
 
   constructor(
     private readonly scene: Phaser.Scene,
     private resolution: number,
-  ) {}
+  ) {
+    this.dropsG = scene.add.graphics().setDepth(799999);
+    this.stainsG = scene.add.graphics().setDepth(-90);
+  }
+
+  /** Cosmetic jitter in [0, 1). The sim never sees it, so it needn't be the seeded Rng. */
+  private rand(): number {
+    this.noise = (Math.imul(this.noise, 1664525) + 1013904223) >>> 0;
+    return this.noise / 4294967296;
+  }
+
+  /**
+   * A spray of blood from a landed blow at (x, y). `dir` is the way the blow travelled (-1, 0 or 1);
+   * drops arc that way, fall to `floorY` and leave stains that fade out.
+   */
+  blood(x: number, y: number, floorY: number, dir: number, count: number): void {
+    for (let i = 0; i < count; i++) {
+      const spread = dir === 0 ? (this.rand() - 0.5) * 5 : dir * (0.8 + this.rand() * 3.4);
+      this.drops.push({
+        x: x + (this.rand() - 0.5) * 10,
+        y: y + (this.rand() - 0.5) * 14,
+        vx: spread + (this.rand() - 0.5) * 1.2,
+        vy: -1 - this.rand() * 3.2,
+        r: 1.4 + this.rand() * 2.4,
+        floorY: floorY + (this.rand() - 0.5) * 14,
+      });
+    }
+  }
 
   setResolution(r: number): void {
     this.resolution = r;
@@ -59,6 +115,7 @@ export class Fx {
   }
 
   update(): void {
+    this.updateBlood();
     for (let i = this.sparks.length - 1; i >= 0; i--) {
       const s = this.sparks[i];
       s.life--;
@@ -112,7 +169,47 @@ export class Fx {
     }
   }
 
+  private updateBlood(): void {
+    const g = this.dropsG;
+    g.clear();
+    for (let i = this.drops.length - 1; i >= 0; i--) {
+      const d = this.drops[i];
+      d.vy += GRAVITY;
+      d.x += d.vx;
+      d.y += d.vy;
+      if (d.y >= d.floorY) {
+        const w = d.r * (2.2 + this.rand() * 1.6);
+        this.stains.push({ x: d.x, y: d.floorY, w, h: w * 0.38, life: STAIN_LIFE });
+        this.drops.splice(i, 1);
+        continue;
+      }
+      g.fillStyle(BLOOD, 1);
+      g.fillCircle(d.x, d.y, d.r);
+      // A short trail behind fast drops reads as motion at 60 Hz.
+      g.fillStyle(BLOOD, 0.45);
+      g.fillCircle(d.x - d.vx * 0.8, d.y - d.vy * 0.8, d.r * 0.7);
+    }
+    if (this.stains.length > MAX_STAINS) this.stains.splice(0, this.stains.length - MAX_STAINS);
+    const sg = this.stainsG;
+    sg.clear();
+    for (let i = this.stains.length - 1; i >= 0; i--) {
+      const s = this.stains[i];
+      s.life--;
+      if (s.life <= 0) {
+        this.stains.splice(i, 1);
+        continue;
+      }
+      const alpha = Math.min(1, s.life / STAIN_FADE) * 0.85;
+      sg.fillStyle(BLOOD_DARK, alpha);
+      sg.fillEllipse(s.x, s.y, s.w, s.h);
+    }
+  }
+
   destroy(): void {
+    this.dropsG.destroy();
+    this.stainsG.destroy();
+    this.drops = [];
+    this.stains = [];
     for (const s of this.sparks) s.g.destroy();
     for (const g of this.pool) g.destroy();
     for (const f of this.floaters) f.t.destroy();

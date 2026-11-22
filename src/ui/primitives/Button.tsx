@@ -13,6 +13,8 @@ interface Props {
   sound?: "tap" | "back" | "none";
   label?: string;
   className?: string;
+  /** The gamepad's B presses this button. Defaults to true for "back" buttons. */
+  padBack?: boolean;
 }
 
 /** Every button unlocks audio on first touch (WebAudio needs a gesture) and clicks. */
@@ -25,12 +27,14 @@ export const Button = ({
   sound = "tap",
   label,
   className,
+  padBack = sound === "back",
 }: Props): ReactElement => (
   <button
     type="button"
     className={`${className ?? "btn"} ${variant === "primary" ? "" : variant} ${small ? "small" : ""}`}
     disabled={disabled}
     aria-label={label}
+    data-pad-back={padBack || undefined}
     onClick={() => {
       audio.unlock();
       if (sound !== "none") audio.sfx(sound === "back" ? "ui_back" : "ui_tap");
