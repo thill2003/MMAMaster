@@ -12,6 +12,10 @@ export interface FighterLook {
   scale: number;
   /** Limb and torso thickness. */
   bulk: number;
+  /** Ink colour for tattoos (arm sleeves, a chest piece, a calf band), or absent for none. */
+  tattoo?: number;
+  /** 0–1: muscle definition — bigger biceps, calves and shoulders, a pec line and abs. Absent is none. */
+  muscle?: number;
 }
 
 /** Every computer-controlled fighter wears these. */
@@ -30,6 +34,8 @@ export const PLAYER_LOOK: FighterLook = {
   hairStyle: "headband",
   scale: 1.06,
   bulk: 1,
+  tattoo: 0x1b2a3a,
+  muscle: 1,
 };
 
 /** Base look per archetype; the level's gym colours replace shorts and trim, the rank sets the armband. */
