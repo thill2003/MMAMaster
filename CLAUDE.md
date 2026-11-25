@@ -28,7 +28,7 @@ The full checklist and the story template are in `docs/DEFINITION_OF_DONE.md`.
 | `src/content` | data, not code: moves, tuning, towns, strings, audio, display | core barrels, shared |
 | `src/platform` | Capacitor vs web adapters | platform, shared |
 | `src/services` | Supabase (stubbed in v1) | core barrels, shared, platform barrel |
-| `src/engine` | Phaser: scenes, sprites, world, audio, bridge | core barrels, content, shared, platform barrel |
+| `src/engine` | Three.js: scenes, fighter models, 3D world, audio, bridge | core barrels, content, shared, platform barrel |
 | `src/ui` | React: screens, HUD, controls, primitives | everything below it, through barrels |
 | `src/app` | composition root: navigation, save, stage | everything, through barrels |
 
@@ -38,7 +38,7 @@ layer — move it; do not loosen the rule. Adding a layer is one entry in `bound
 
 ## Rules that are easy to break
 
-- **`core/` is pure.** No `phaser`, `react`, DOM, `Date.now()`, `Math.random()` or frame times. Time is 60 Hz
+- **`core/` is pure.** No `three`, `react`, DOM, `Date.now()`, `Math.random()` or frame times. Time is 60 Hz
   ticks; randomness is the seeded `Rng` from `@/shared/rng`. The same inputs must replay to the same fight —
   `src/content/content.test.ts` checks it.
 - **`core/` cannot import `content/`.** Rules take their numbers as arguments; `content/fightConfig.ts`
@@ -49,7 +49,7 @@ layer — move it; do not loosen the rule. Adding a layer is one entry in `bound
 - **Every `core/` module** has `*.test.ts` beside its files and an `index.ts` barrel. Import other elements
   through their barrel only.
 - **The simulation is `core/fight`'s `FightSim`.** `engine/` feeds it one input frame per tick from a
-  fixed-step accumulator and draws the state. Game rules never go in a Phaser scene or a React component.
+  fixed-step accumulator and draws the state. Game rules never go in a 3D scene or a React component.
 - **All input is the action map** (`core/input`): touch, keyboard and gamepad reduce to held actions.
   `SPECIAL_1` and `SPECIAL_2` are defined and bound to nothing in v1.
 - **Orientation is one value** (`capacitor.config.ts` and `src/content/display.ts`). Never hardcode it.

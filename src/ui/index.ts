@@ -2,7 +2,7 @@ export { Controls } from "./controls/Controls";
 export { Hud } from "./hud/Hud";
 export { Button } from "./primitives/Button";
 export { BeltArt, BeltIcon, RotateIcon } from "./primitives/icons";
-export { PhaserGame } from "./primitives/PhaserGame";
+export { GameView } from "./primitives/GameView";
 export { Stars } from "./primitives/Stars";
 export { useGamepadMenu } from "./primitives/useGamepadMenu";
 export { FightScreen } from "./screens/FightScreen";

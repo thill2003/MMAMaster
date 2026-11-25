@@ -74,12 +74,12 @@ module.exports = {
       {
         default: "allow",
         rules: [
-          { from: ["core", "content", "shared"], disallow: ["phaser", "react", "react-dom", "@capacitor/*", "@supabase/*"] },
-          { from: ["services"], disallow: ["phaser", "react", "react-dom", "@capacitor/*"] },
+          { from: ["core", "content", "shared"], disallow: ["three", "react", "react-dom", "@capacitor/*", "@supabase/*"] },
+          { from: ["services"], disallow: ["three", "react", "react-dom", "@capacitor/*"] },
           { from: ["engine"], disallow: ["react", "react-dom", "@capacitor/*", "@supabase/*"] },
-          { from: ["ui"], disallow: ["phaser", "@capacitor/*", "@supabase/*"] },
-          { from: ["platform"], disallow: ["phaser", "react", "react-dom", "@supabase/*"] },
-          { from: ["app"], disallow: ["phaser", "@capacitor/*", "@supabase/*"] },
+          { from: ["ui"], disallow: ["three", "@capacitor/*", "@supabase/*"] },
+          { from: ["platform"], disallow: ["three", "react", "react-dom", "@supabase/*"] },
+          { from: ["app"], disallow: ["three", "@capacitor/*", "@supabase/*"] },
         ],
       },
     ],

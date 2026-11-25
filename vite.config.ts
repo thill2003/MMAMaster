@@ -11,7 +11,7 @@ export default defineConfig({
     target: "es2021",
     chunkSizeWarningLimit: 1800,
     rollupOptions: {
-      output: { manualChunks: { phaser: ["phaser"] } },
+      output: { manualChunks: { three: ["three"] } },
     },
   },
   server: { host: true, port: 5173 },
