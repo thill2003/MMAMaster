@@ -1,7 +1,7 @@
 /**
  * The action map. Every input device (touch, keyboard, gamepad) reduces to a set of held actions per tick;
  * the interpreter turns that into taps, holds, double-tap dashes and guard presses. Nothing here knows about
- * the DOM, Phaser or wall-clock time — everything is counted in 60 Hz ticks.
+ * the DOM, the renderer or wall-clock time — everything is counted in 60 Hz ticks.
  */
 export const ACTIONS = [
   "MOVE_LEFT",

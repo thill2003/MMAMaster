@@ -1,4 +1,4 @@
-import Phaser from "phaser";
+import { ACESFilmicToneMapping, PCFSoftShadowMap, SRGBColorSpace, WebGLRenderer } from "three";
 
 import { DISPLAY } from "@/content/display";
 import type { TownDef } from "@/content/towns";
@@ -6,9 +6,7 @@ import type { FightResult, HudState } from "@/core/fight";
 import type { Action } from "@/core/input";
 import type { Difficulty } from "@/core/progress";
 
-import { BootScene } from "../scenes/BootScene";
-import { FightScene } from "../scenes/FightScene";
-import { PreloadScene } from "../scenes/PreloadScene";
+import { FightScene, type SceneHost } from "../scenes/FightScene";
 
 import { type Held, InputDevices } from "./devices";
 
@@ -45,63 +43,109 @@ export const computeView = (cssWidth: number, cssHeight: number, dpr: number, dp
 };
 
 /**
- * The typed door between React and Phaser (MM-014). React hands in fight requests, held actions and
+ * The typed door between React and the 3D engine (MM-014). React hands in fight requests, held actions and
  * pause; the engine hands back HUD state and the result. Neither side reaches into the other.
  */
-export class GameBridge {
-  readonly game: Phaser.Game;
+export class GameBridge implements SceneHost {
+  readonly renderer: WebGLRenderer;
   view: ViewMetrics;
   request: FightRequest | null = null;
   paused = false;
   private callbacks: FightCallbacks | null = null;
   private readonly touch: Held = {};
   private readonly devices = new InputDevices();
+  private fight: FightScene | null = null;
+  private raf = 0;
+  private last = 0;
+  private readonly flashEl: HTMLDivElement;
+  private readonly debugEl: HTMLPreElement;
 
   constructor(private readonly parent: HTMLElement) {
     this.view = computeView(parent.clientWidth || 960, parent.clientHeight || 540, window.devicePixelRatio || 1);
-    this.game = new Phaser.Game({
-      type: Phaser.AUTO,
-      parent,
-      width: Math.round(this.view.logicalWidth * this.view.renderScale),
-      height: Math.round(this.view.logicalHeight * this.view.renderScale),
-      backgroundColor: "#0b0b12",
-      scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.NO_CENTER },
-      render: { antialias: true, powerPreference: "high-performance" },
-      fps: { target: 60 },
-      banner: false,
-      audio: { noAudio: true },
-      input: { keyboard: false, mouse: false, touch: false, gamepad: false },
-      scene: [BootScene, PreloadScene, FightScene],
+    this.renderer = new WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    this.renderer.setPixelRatio(1);
+    this.renderer.outputColorSpace = SRGBColorSpace;
+    this.renderer.toneMapping = ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = PCFSoftShadowMap;
+    this.renderer.setClearColor(0x0b0b12);
+    this.applySize();
+    parent.appendChild(this.renderer.domElement);
+
+    // The boss-KO flash and the debug readout sit over the canvas.
+    this.flashEl = document.createElement("div");
+    Object.assign(this.flashEl.style, { position: "absolute", inset: "0", background: "#fff", opacity: "0", pointerEvents: "none" });
+    parent.appendChild(this.flashEl);
+    this.debugEl = document.createElement("pre");
+    Object.assign(this.debugEl.style, {
+      position: "absolute",
+      left: "6px",
+      bottom: "6px",
+      margin: "0",
+      padding: "2px 4px",
+      font: "11px monospace",
+      color: "#9effa0",
+      background: "rgba(0,0,0,0.5)",
+      pointerEvents: "none",
+      display: "none",
     });
-    this.game.registry.set("bridge", this);
+    parent.appendChild(this.debugEl);
+
     this.devices.attach();
+    this.renderer.clear();
+  }
+
+  private applySize(): void {
+    this.renderer.setSize(
+      Math.round(this.view.logicalWidth * this.view.renderScale),
+      Math.round(this.view.logicalHeight * this.view.renderScale),
+      false,
+    );
   }
 
   /** Re-fit after the stage changes size (rotation, window resize). */
   resize(): void {
     this.view = computeView(this.parent.clientWidth || 960, this.parent.clientHeight || 540, window.devicePixelRatio || 1);
-    this.game.scale.setGameSize(
-      Math.round(this.view.logicalWidth * this.view.renderScale),
-      Math.round(this.view.logicalHeight * this.view.renderScale),
-    );
-    this.game.scale.refresh();
+    this.applySize();
+    this.fight?.resize();
   }
 
   startFight(request: FightRequest, callbacks: FightCallbacks): void {
+    this.stopLoop();
     this.request = request;
     this.callbacks = callbacks;
     this.paused = false;
     for (const k of Object.keys(this.touch) as Action[]) this.touch[k] = false;
-    // SceneManager.start restarts the scene if it is already running.
-    const start = () => this.game.scene.start("Fight");
-    if (this.game.isBooted && this.game.scene.getScene("Fight")) start();
-    else this.game.events.once("mma-ready", start);
+    this.fight = new FightScene(this, request);
+    this.last = performance.now();
+    const tick = (now: number): void => {
+      const fight = this.fight;
+      if (!fight) return;
+      const delta = now - this.last;
+      this.last = now;
+      fight.update(delta);
+      // A finish callback may have stopped the fight inside update.
+      if (this.fight === fight) {
+        this.renderer.render(fight.scene, fight.camera);
+        this.raf = requestAnimationFrame(tick);
+      }
+    };
+    this.raf = requestAnimationFrame(tick);
+  }
+
+  private stopLoop(): void {
+    cancelAnimationFrame(this.raf);
+    this.raf = 0;
+    this.fight?.destroy();
+    this.fight = null;
   }
 
   stopFight(): void {
     this.callbacks = null;
     this.request = null;
-    if (this.game.scene.getScene("Fight")) this.game.scene.stop("Fight");
+    this.stopLoop();
+    this.renderer.clear();
   }
 
   setPaused(paused: boolean): void {
@@ -125,14 +169,26 @@ export class GameBridge {
     this.callbacks?.onFinished(result);
   }
 
+  setFlash(alpha: number): void {
+    this.flashEl.style.opacity = String(alpha * 0.85);
+  }
+
+  setDebugText(text: string | null): void {
+    this.debugEl.style.display = text === null ? "none" : "block";
+    if (text !== null) this.debugEl.textContent = text;
+  }
+
   debugCommand(cmd: "clear" | "skip" | "god"): void {
-    const scene = this.game.scene.getScene("Fight") as FightScene | null;
-    scene?.debugCommand(cmd);
+    this.fight?.debugCommand(cmd);
   }
 
   destroy(): void {
+    this.stopLoop();
     this.devices.detach();
     this.callbacks = null;
-    this.game.destroy(true);
+    this.renderer.dispose();
+    this.renderer.domElement.remove();
+    this.flashEl.remove();
+    this.debugEl.remove();
   }
 }

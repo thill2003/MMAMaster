@@ -55,7 +55,7 @@ yet — see "Not verified" before trusting the feel or the difficulty.
 | Open item in the plan | What the build does | Where to change it |
 |---|---|---|
 | Up/down: depth or jump/crouch (Q1) | Walk in depth, the plan's default | `core/combat`, `core/depth` |
-| How the 3D look is made (Q2) | **Not done.** Fighters, backdrops, the map and icons are drawn in code; fighters are jointed figures posed from angle tables, shaded to read as rounded. A stand-in until the Blender pipeline exists. | `engine/sprites`, `engine/world` |
+| How the 3D look is made (Q2) | **Real-time 3D with Three.js** (the plan's renderer fallback), replacing Phaser. Fighters are lit primitives posed every frame from the same angle tables in `poses.ts`; street and arena kits are 3D sets with shadows; gameplay is unchanged (still a belt-scroller on the sim's depth band). Camera framing is data in `CAMERA_3D`. Not yet run on a phone: 60 fps with shadows on the floor device is unverified. | `engine/sprites`, `engine/world`, `content/display.ts` |
 | Offline v1 (Q3) | Offline. `services/` is a stub and `@supabase/supabase-js` is not installed. | `src/services` |
 | Lives X and Y (Q6) | Start with 7, +5 each new day, cap 7 | `content/fighters/tuning.ts` `LIVES_RULES` |
 | Controls: DOM or Phaser (MM-015) | React DOM overlay on pointer events; the hub has hysteresis against the arms | `ui/controls` |
@@ -77,7 +77,7 @@ Things the plan did not ask for that the build needed:
 - **Bodies don't overlap** on one depth line, and grunts never swing from off screen. Both came out of
   soft-locks the bot found.
 - **Demo mode** (`?demo=<townId>`) and **Prettier** (`pnpm format`).
-- Phaser is pinned to the 3.x line (3.90) as the plan says; Phaser 4 exists and was not adopted.
+- Phaser was replaced by Three.js (pinned 0.170.0) when the game went real-time 3D.
 
 ## The levels as built
 

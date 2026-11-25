@@ -15,7 +15,7 @@ import {
   LevelCard,
   MetroMap,
   OutOfLives,
-  PhaserGame,
+  GameView,
   Results,
   RotateIcon,
   SettingsScreen,
@@ -147,7 +147,7 @@ export const App = (): ReactElement => {
   return (
     <div className="shell" onContextMenu={(e) => e.preventDefault()}>
       <div className="stage" style={stageStyle}>
-        <PhaserGame onReady={setBridge} />
+        <GameView onReady={setBridge} />
 
         {save && screen.name === "title" && (
           <Title

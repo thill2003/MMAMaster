@@ -20,6 +20,26 @@ export const DISPLAY = {
   fighterScale: 1.2,
 };
 
+/**
+ * The real-time 3D view. The world is measured in logical pixels: x runs along the street as in the
+ * simulation, y is up, and the simulation's depth z is stretched by `depthStretch` toward the camera so the
+ * walkable band keeps its on-screen height under a tilted camera.
+ */
+export const CAMERA_3D = {
+  /** Vertical field of view, degrees. Narrow keeps the far edge of the band close to the near edge's width. */
+  fov: 22,
+  /** How far the camera looks down, degrees. */
+  pitch: 16,
+  /** The simulation depth whose screen width equals the logical view width: the near part of the band. */
+  frameDepth: 112,
+  /** Height above the floor the camera aims at. */
+  aimHeight: 150,
+  /** World units per unit of simulation depth. */
+  depthStretch: 2.2,
+  /** Shadow map size; the floor device may need it lower. */
+  shadowMapSize: 2048,
+};
+
 export type DeviceProfileId = "phone-small" | "phone" | "tablet";
 
 export interface DeviceProfile {
